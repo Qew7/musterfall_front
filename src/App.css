@@ -1,0 +1,134 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 48px;
+  text-align: left;
+}
+
+.hero-panel,
+.details-panel article,
+.status-card {
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.hero-panel {
+  padding: 48px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.lead {
+  max-width: 720px;
+  font-size: 20px;
+}
+
+.status-card {
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--panel-strong);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.status-pill--loading {
+  background: rgba(201, 166, 62, 0.16);
+  color: #8a6114;
+}
+
+.status-pill--success {
+  background: rgba(37, 118, 73, 0.14);
+  color: #1f6b43;
+}
+
+.status-pill--error {
+  background: rgba(160, 49, 49, 0.14);
+  color: #8f2a2a;
+}
+
+.status-copy {
+  margin-top: 16px;
+}
+
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 20px 0 0;
+}
+
+.status-grid div {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.status-grid dt {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.status-grid dd {
+  margin: 0;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.details-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.details-panel article {
+  padding: 28px;
+}
+
+.details-panel ul {
+  margin: 16px 0 0;
+  padding-left: 20px;
+}
+
+.details-panel li + li {
+  margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    padding: 20px;
+  }
+
+  .hero-panel,
+  .details-panel article {
+    padding: 24px;
+  }
+
+  .lead {
+    font-size: 18px;
+  }
+
+  .status-grid,
+  .details-panel {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,66 @@
+:root {
+  --text: #5d5347;
+  --text-h: #201810;
+  --bg: #efe3cf;
+  --border: rgba(71, 49, 20, 0.16);
+  --panel: rgba(255, 248, 239, 0.74);
+  --panel-strong: rgba(250, 237, 219, 0.95);
+  --accent: #8e3b12;
+  --shadow:
+    rgba(76, 45, 12, 0.14) 0 22px 50px -24px,
+    rgba(41, 23, 7, 0.08) 0 12px 24px -18px;
+
+  --sans: "Avenir Next", "Segoe UI", sans-serif;
+  --heading: "Georgia", "Times New Roman", serif;
+  --mono: "SF Mono", "SFMono-Regular", monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top, rgba(255, 246, 232, 0.92), transparent 32%),
+    linear-gradient(180deg, #e9dbc4 0%, #efe3cf 40%, #dbc29f 100%);
+}
+
+#root {
+  min-height: 100svh;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 700;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 72px;
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  margin: 0 0 20px;
+  @media (max-width: 1024px) {
+    font-size: 48px;
+  }
+}
+h2 {
+  font-size: 30px;
+  line-height: 1.08;
+  margin: 0;
+}
+p {
+  margin: 0;
+}
