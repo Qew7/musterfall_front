@@ -1,111 +1,94 @@
-import { useEffect, useState } from 'react'
 import './App.css'
+import { AppHeader } from './components/AppHeader'
+import { useBootstrapData } from './hooks/useBootstrapData'
+import { useCampaignSession } from './hooks/useCampaignSession'
+import { listAvailableFactions } from './game/catalog'
+import { assignFaction } from './game/engine'
+import { BattleScreen } from './screens/BattleScreen'
+import { FactionsScreen } from './screens/FactionsScreen'
+import { MenuScreen } from './screens/MenuScreen'
+import { RosterScreen } from './screens/RosterScreen'
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000'
 
 function App() {
-  const [apiState, setApiState] = useState({ status: 'loading', payload: null })
-
-  useEffect(() => {
-    let cancelled = false
-
-    const loadStatus = async () => {
-      try {
-        const response = await fetch(`${apiBaseUrl}/api/status`)
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
-        }
-
-        const payload = await response.json()
-
-        if (!cancelled) {
-          setApiState({ status: 'success', payload })
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setApiState({
-            status: 'error',
-            payload: error instanceof Error ? error.message : 'Unknown error',
-          })
-        }
-      }
-    }
-
-    loadStatus()
-
-    return () => {
-      cancelled = true
-    }
-  }, [])
+  const { apiState, catalogState } = useBootstrapData(apiBaseUrl)
+  const catalog = catalogState.payload
+  const {
+    screen,
+    playerCount,
+    setPlayerCount,
+    campaign,
+    setCampaign,
+    setActivePlayerId,
+    activePlayers,
+    selectedPlayer,
+    canAdvanceFromFactions,
+    champion,
+    operationState,
+    metaProgress,
+    startCampaign,
+    continueFromFactions,
+    beginRound,
+    prepareNextRound,
+    nextPreparation,
+  } = useCampaignSession(apiBaseUrl, catalog)
+  const factions = catalog ? listAvailableFactions(catalog) : []
+  const championFactionName = metaProgress.lastChampion
+    ? factions.find((entry) => entry.id === metaProgress.lastChampion.factionId)?.name ?? metaProgress.lastChampion.factionId
+    : null
+  const winnerFactionName = champion ? factions.find((entry) => entry.id === champion.factionId)?.name ?? champion.factionId : null
 
   return (
     <main className="app-shell">
-      <section className="hero-panel">
-        <p className="eyebrow">Autobattler campaign prototype</p>
-        <h1>Musterfall</h1>
-        <p className="lead">
-          Собирайте армию в духе фэнтези-сражений, усиливайте строй и проходите
-          цепочку боёв против всё более опасных врагов.
-        </p>
+      <AppHeader apiStatus={apiState.status} metaProgress={metaProgress} />
 
-        <div className="status-card">
-          <span className={`status-pill status-pill--${apiState.status}`}>
-            API: {apiState.status}
-          </span>
+      {catalogState.error && <p className="lead">Каталог не загрузился: {catalogState.error}</p>}
+      {operationState.error && <p className="lead">Ошибка операции: {operationState.error}</p>}
 
-          {apiState.status === 'success' && (
-            <dl className="status-grid">
-              <div>
-                <dt>Имя проекта</dt>
-                <dd>{apiState.payload.name}</dd>
-              </div>
-              <div>
-                <dt>Backend</dt>
-                <dd>{apiState.payload.status}</dd>
-              </div>
-              <div>
-                <dt>База данных</dt>
-                <dd>{apiState.payload.services.database ? 'ready' : 'offline'}</dd>
-              </div>
-              <div>
-                <dt>Время сервера</dt>
-                <dd>{apiState.payload.server_time}</dd>
-              </div>
-            </dl>
-          )}
+      {screen === 'menu' && (
+        <MenuScreen
+          playerCount={playerCount}
+          setPlayerCount={setPlayerCount}
+          startCampaign={startCampaign}
+          metaProgress={metaProgress}
+          championFactionName={championFactionName}
+          catalogReady={catalogState.status === 'success' && !operationState.busy}
+        />
+      )}
 
-          {apiState.status === 'loading' && (
-            <p className="status-copy">Проверка соединения с Rails API...</p>
-          )}
+      {screen === 'factions' && catalog && (
+        <FactionsScreen
+          campaign={campaign}
+          factions={factions}
+          canAdvance={canAdvanceFromFactions}
+          onAssignFaction={(playerId, factionId) => setCampaign(assignFaction(campaign, catalog, playerId, factionId))}
+          onContinue={continueFromFactions}
+        />
+      )}
 
-          {apiState.status === 'error' && (
-            <p className="status-copy">
-              Не удалось получить ответ от backend: {apiState.payload}
-            </p>
-          )}
-        </div>
-      </section>
+      {screen === 'roster' && selectedPlayer && catalog && (
+        <RosterScreen
+          campaign={campaign}
+          catalog={catalog}
+          activePlayers={activePlayers}
+          selectedPlayer={selectedPlayer}
+          onSelectPlayer={setActivePlayerId}
+          setCampaign={setCampaign}
+          onNextPreparation={nextPreparation}
+          onBeginRound={beginRound}
+          isBusy={operationState.busy}
+        />
+      )}
 
-      <section className="details-panel">
-        <article>
-          <h2>Стек проекта</h2>
-          <ul>
-            <li>Rails API в папке backend</li>
-            <li>PostgreSQL как основная база данных</li>
-            <li>React + Vite в папке frontend</li>
-          </ul>
-        </article>
-
-        <article>
-          <h2>Ближайшие шаги</h2>
-          <ul>
-            <li>Создать модели юнитов, армий и боёв</li>
-            <li>Поднять PostgreSQL и выполнить rails db:prepare</li>
-            <li>Собрать экран найма, формации и симуляции боя</li>
-          </ul>
-        </article>
-      </section>
+      {screen === 'battle' && campaign.lastRoundReport && (
+        <BattleScreen
+          campaign={campaign}
+          champion={champion}
+          championFactionName={winnerFactionName}
+          onContinue={prepareNextRound}
+        />
+      )}
     </main>
   )
 }

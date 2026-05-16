@@ -1,0 +1,119 @@
+import { getTemplate } from './catalog'
+import { createDefaultDeployment } from './battlefield'
+
+let entityCounter = 1
+
+export function createUnitEntity(catalog, templateId, ownerId) {
+  const template = getTemplate(catalog, templateId)
+  const maxHealth = template.models * template.modelHealth
+
+  return {
+    id: `unit-${entityCounter++}`,
+    ownerId,
+    templateId,
+    name: template.name,
+    kind: 'unit',
+    components: {
+      identity: { factionId: template.factionId, archetype: 'formation' },
+      combat: {
+        armorType: template.armorType,
+        weaponType: template.weaponType,
+        melee: template.melee,
+        ranged: template.ranged,
+        spell: 0,
+        movement: template.movement,
+        shootingRange: template.shootingRange,
+        spellRange: template.spellRange,
+        shootingTemplate: template.shootingTemplate,
+        spellTemplate: template.spellTemplate,
+        requiresLineOfSight: template.requiresLineOfSight,
+        initiative: template.initiative,
+      },
+      formation: {
+        models: template.models,
+        width: template.width,
+        depth: template.baseDepth,
+        lane: 'center',
+        row: 'reserve',
+        ...createDefaultDeployment('reserve', 'center'),
+      },
+      abilities: [...template.abilities],
+      health: {
+        modelHealth: template.modelHealth,
+        max: maxHealth,
+      },
+      economy: { cost: template.cost },
+    },
+    state: {
+      currentHealth: maxHealth,
+      attachedHeroIds: [],
+    },
+  }
+}
+
+export function createHeroEntity(catalog, templateId, ownerId, free = false) {
+  const template = getTemplate(catalog, templateId)
+
+  return {
+    id: `hero-${entityCounter++}`,
+    ownerId,
+    templateId,
+    name: template.name,
+    kind: 'hero',
+    components: {
+      identity: { factionId: template.factionId, archetype: 'character' },
+      combat: {
+        armorType: template.armorType,
+        weaponType: template.weaponType,
+        melee: template.melee,
+        ranged: template.ranged,
+        spell: template.spell,
+        movement: template.movement,
+        shootingRange: template.shootingRange,
+        spellRange: template.spellRange,
+        shootingTemplate: template.shootingTemplate,
+        spellTemplate: template.spellTemplate,
+        requiresLineOfSight: template.requiresLineOfSight,
+        initiative: template.initiative,
+      },
+      formation: {
+        models: 1,
+        width: 1,
+        depth: template.baseDepth,
+        lane: 'center',
+        row: 'reserve',
+        ...createDefaultDeployment('reserve', 'center'),
+      },
+      abilities: [...template.abilities],
+      health: {
+        modelHealth: template.modelHealth,
+        max: template.modelHealth,
+      },
+      progression: {
+        level: 1,
+        experience: 0,
+        spentExperience: 0,
+        pendingDraft: [],
+        pickedUpgradeIds: [],
+      },
+      economy: { cost: free ? 0 : template.cost },
+      hero: { mounted: template.mounted },
+    },
+    state: {
+      currentHealth: template.modelHealth,
+      attachedTo: null,
+    },
+  }
+}
+
+export function cloneState(value) {
+  return structuredClone(value)
+}
+
+export function healthToModels(entity) {
+  return Math.max(0, Math.ceil(entity.state.currentHealth / entity.components.health.modelHealth))
+}
+
+export function isDeployable(entity) {
+  return entity.components.formation.row !== 'reserve' && entity.state.currentHealth > 0
+}

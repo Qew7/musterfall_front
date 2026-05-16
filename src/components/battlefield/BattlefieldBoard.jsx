@@ -1,0 +1,258 @@
+import { battlefieldConfig } from '../../game/battlefield'
+import { getFacingZonePolygons, getFootprintGeometry, getRotateHandlePositions } from '../../game/placementPreview'
+
+export function BattlefieldBoard({
+  snapshot,
+  selectedUnitId = null,
+  onSelectUnit,
+  onCellClick,
+  onCellHover,
+  onUnitPointerDown,
+  onUnitRotateStart,
+  onSurfacePointerUp,
+  onRotatePreview,
+  interactiveZone = null,
+  previewPlacement = null,
+  tacticalOverlay = null,
+}) {
+  const width = snapshot?.width ?? battlefieldConfig.width
+  const height = snapshot?.height ?? battlefieldConfig.height
+  const units = snapshot?.units ?? []
+  const cells = Array.from({ length: width * height }, (_, index) => {
+    const x = index % width
+    const y = Math.floor(index / width)
+    const isInteractive = interactiveZone
+      ? x >= interactiveZone.xMin && x <= interactiveZone.xMax && y >= interactiveZone.yMin && y <= interactiveZone.yMax
+      : Boolean(onCellClick)
+
+    return { x, y, isInteractive }
+  })
+  const selectedUnit = previewPlacement?.entityId === selectedUnitId
+    ? previewPlacement
+    : units.find((unit) => unit.entityId === selectedUnitId) ?? null
+  const selectedZones = selectedUnit ? getFacingZonePolygons(selectedUnit) : null
+  const previewGeometry = previewPlacement ? getFootprintGeometry(previewPlacement) : null
+  const previewHandles = previewPlacement ? getRotateHandlePositions(previewPlacement) : null
+
+  return (
+    <div className="battlefield-board" style={{ '--board-columns': width, '--board-rows': height }}>
+      <div className="battlefield-board__surface" onPointerUp={() => onSurfacePointerUp?.()}>
+        <svg className="battlefield-board__overlay" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+          {selectedZones && (
+            <>
+              <polygon className="battlefield-board__zone battlefield-board__zone--front" points={selectedZones.front.map((point) => `${point.x},${point.y}`).join(' ')} />
+              <polygon className="battlefield-board__zone battlefield-board__zone--flank" points={selectedZones.left.map((point) => `${point.x},${point.y}`).join(' ')} />
+              <polygon className="battlefield-board__zone battlefield-board__zone--rear" points={selectedZones.rear.map((point) => `${point.x},${point.y}`).join(' ')} />
+              <polygon className="battlefield-board__zone battlefield-board__zone--flank" points={selectedZones.right.map((point) => `${point.x},${point.y}`).join(' ')} />
+            </>
+          )}
+
+          {previewPlacement?.overlay && (
+            <>
+              <line
+                className={`battlefield-board__path ${previewPlacement.isLegal ? '' : 'battlefield-board__path--illegal'}`}
+                x1={previewPlacement.overlay.path.start.x}
+                y1={previewPlacement.overlay.path.start.y}
+                x2={previewPlacement.overlay.path.end.x}
+                y2={previewPlacement.overlay.path.end.y}
+              />
+
+              {previewPlacement.overlay.wheelArc && (
+                <path
+                  className={`battlefield-board__wheel ${previewPlacement.wheelBlocked ? 'battlefield-board__wheel--blocked' : ''}`}
+                  d={previewPlacement.overlay.wheelArc}
+                />
+              )}
+            </>
+          )}
+
+          {previewGeometry && (
+            <polygon
+              className={`battlefield-board__footprint ${previewPlacement.isLegal ? '' : 'battlefield-board__footprint--illegal'}`}
+              points={previewGeometry.boardCorners.map((point) => `${point.x},${point.y}`).join(' ')}
+            />
+          )}
+
+          {tacticalOverlay?.path && (
+            <line
+              className="battlefield-board__path battlefield-board__path--tactical"
+              x1={tacticalOverlay.path.start.x + 0.5}
+              y1={tacticalOverlay.path.start.y + 0.5}
+              x2={tacticalOverlay.path.end.x + 0.5}
+              y2={tacticalOverlay.path.end.y + 0.5}
+            />
+          )}
+
+          {tacticalOverlay?.wheelArc && <path className="battlefield-board__wheel" d={tacticalOverlay.wheelArc} />}
+
+          {tacticalOverlay?.los && (
+            <line
+              className={`battlefield-board__los ${tacticalOverlay.los.blocked ? 'battlefield-board__los--blocked' : ''}`}
+              x1={tacticalOverlay.los.start.x + 0.5}
+              y1={tacticalOverlay.los.start.y + 0.5}
+              x2={tacticalOverlay.los.end.x + 0.5}
+              y2={tacticalOverlay.los.end.y + 0.5}
+            />
+          )}
+
+          {tacticalOverlay?.template?.shape === 'circle' && (
+            <circle
+              className="battlefield-board__template"
+              cx={tacticalOverlay.template.center.x + 0.5}
+              cy={tacticalOverlay.template.center.y + 0.5}
+              r={tacticalOverlay.template.radius}
+            />
+          )}
+
+          {tacticalOverlay?.template?.shape === 'cone' && (
+            <polygon
+              className="battlefield-board__template"
+              points={tacticalOverlay.template.polygon.map((point) => `${point.x},${point.y}`).join(' ')}
+            />
+          )}
+        </svg>
+
+        {cells.map((cell) => {
+          const className = `battlefield-board__cell ${cell.isInteractive ? 'battlefield-board__cell--interactive' : ''}`
+
+          if (!onCellClick || !cell.isInteractive) {
+            return <div key={`${cell.x}-${cell.y}`} className={className} />
+          }
+
+          return (
+            <button
+              key={`${cell.x}-${cell.y}`}
+              type="button"
+              className={className}
+              onClick={() => onCellClick(cell.x, cell.y)}
+              onPointerEnter={() => onCellHover?.(cell.x, cell.y)}
+              aria-label={`Поставить отряд в точку ${cell.x}, ${cell.y}`}
+            />
+          )
+        })}
+
+        {previewPlacement && (
+          <div
+            className="battlefield-unit battlefield-unit--preview"
+            style={{
+              left: `${((previewPlacement.x + 0.5) / width) * 100}%`,
+              top: `${((previewPlacement.y + 0.5) / height) * 100}%`,
+              width: `${Math.max(7, (previewPlacement.baseWidth / width) * 100)}%`,
+              height: `${Math.max(7, (previewPlacement.baseDepth / height) * 100)}%`,
+              '--facing': `${previewPlacement.facing}deg`,
+            }}
+          >
+            <span className="battlefield-unit__base">
+              <span className="battlefield-unit__face battlefield-unit__face--front" />
+              <span className="battlefield-unit__face battlefield-unit__face--rear" />
+              <span className="battlefield-unit__face battlefield-unit__face--left" />
+              <span className="battlefield-unit__face battlefield-unit__face--right" />
+              <span className="battlefield-unit__corner battlefield-unit__corner--front-left" />
+              <span className="battlefield-unit__corner battlefield-unit__corner--front-right" />
+              <span className="battlefield-unit__corner battlefield-unit__corner--rear-right" />
+              <span className="battlefield-unit__corner battlefield-unit__corner--rear-left" />
+              <span className="battlefield-unit__arrow" />
+            </span>
+            <span className="battlefield-unit__label">
+              <strong>{previewPlacement.name}</strong>
+              <small>{previewPlacement.isLegal ? 'preview ready' : 'illegal placement'}</small>
+            </span>
+          </div>
+        )}
+
+        {previewPlacement && previewHandles && onRotatePreview && (
+          <>
+            <button
+              type="button"
+              className="battlefield-board__handle battlefield-board__handle--left"
+              style={{ left: `${(previewHandles.left.x / width) * 100}%`, top: `${(previewHandles.left.y / height) * 100}%` }}
+              onClick={() => onRotatePreview('left')}
+              aria-label="Повернуть preview влево"
+            >
+              ↺
+            </button>
+            <button
+              type="button"
+              className="battlefield-board__handle battlefield-board__handle--right"
+              style={{ left: `${(previewHandles.right.x / width) * 100}%`, top: `${(previewHandles.right.y / height) * 100}%` }}
+              onClick={() => onRotatePreview('right')}
+              aria-label="Повернуть preview вправо"
+            >
+              ↻
+            </button>
+          </>
+        )}
+
+        {units.map((unit) => {
+          const widthPercent = `${Math.max(7, (unit.baseWidth / width) * 100)}%`
+          const heightPercent = `${Math.max(7, (unit.baseDepth / height) * 100)}%`
+          const leftPercent = `${((unit.x + 0.5) / width) * 100}%`
+          const topPercent = `${((unit.y + 0.5) / height) * 100}%`
+          const isSelected = unit.entityId === selectedUnitId
+          const toneClass = unit.sideKey === 'right' ? 'battlefield-unit--enemy' : 'battlefield-unit--ally'
+          const isTarget = tacticalOverlay?.targetIds?.includes(unit.entityId)
+          const isAffected = tacticalOverlay?.affectedIds?.includes(unit.entityId)
+          const isBlocked = tacticalOverlay?.blockedIds?.includes(unit.entityId)
+          const contactClass = tacticalOverlay?.contactTargetId === unit.entityId && tacticalOverlay.contactVector
+            ? `battlefield-unit--contact-${tacticalOverlay.contactVector}`
+            : ''
+
+          return (
+            <div
+              key={unit.entityId}
+              className="battlefield-unit-shell"
+              style={{ left: leftPercent, top: topPercent, width: widthPercent, height: heightPercent, '--facing': `${unit.facing}deg` }}
+            >
+              <button
+                type="button"
+                className={`battlefield-unit ${toneClass} ${isSelected ? 'battlefield-unit--selected' : ''} ${isTarget ? 'battlefield-unit--targeted' : ''} ${isAffected ? 'battlefield-unit--affected' : ''} ${isBlocked ? 'battlefield-unit--blocked' : ''} ${contactClass}`}
+                onPointerDown={(event) => onUnitPointerDown?.(unit.entityId, event)}
+                onClick={() => onSelectUnit?.(unit.entityId)}
+              >
+                <span className="battlefield-unit__base">
+                  <span className="battlefield-unit__face battlefield-unit__face--front" />
+                  <span className="battlefield-unit__face battlefield-unit__face--rear" />
+                  <span className="battlefield-unit__face battlefield-unit__face--left" />
+                  <span className="battlefield-unit__face battlefield-unit__face--right" />
+                  <span className="battlefield-unit__corner battlefield-unit__corner--front-left" />
+                  <span className="battlefield-unit__corner battlefield-unit__corner--front-right" />
+                  <span className="battlefield-unit__corner battlefield-unit__corner--rear-right" />
+                  <span className="battlefield-unit__corner battlefield-unit__corner--rear-left" />
+                  <span className="battlefield-unit__arrow" />
+                </span>
+                <span className="battlefield-unit__label">
+                  <strong>{unit.name}</strong>
+                  <small>
+                    {unit.modelsRemaining > 0 ? `${unit.modelsRemaining} мод.` : `${unit.currentHealth}/${unit.maxHealth} HP`}
+                  </small>
+                </span>
+              </button>
+
+              {onUnitRotateStart && (
+                <span className="battlefield-unit__corner-controls" aria-hidden="true">
+                  {['front-left', 'front-right', 'rear-right', 'rear-left'].map((corner) => (
+                    <button
+                      key={corner}
+                      type="button"
+                      className={`battlefield-unit__corner-control battlefield-unit__corner--${corner}`}
+                      onPointerDown={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        onUnitRotateStart(unit.entityId, event)
+                      }}
+                      onClick={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                      }}
+                      aria-label={`Повернуть ${unit.name} от угла ${corner}`}
+                    />
+                  ))}
+                </span>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
