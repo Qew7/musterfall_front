@@ -70,6 +70,12 @@ export function resolveAttackPhase({ phase, actingSide, targetSide, roundNumber,
         return
       }
 
+      const attackerForSkillCheck = attackType === 'melee' ? entry.profile : attacker
+      if (!didHit(attackerForSkillCheck, target, attackType)) {
+        addPhaseEvent(phase, `${formatBattleActor(entry.actorRole, entry.actorName)} промахивается по ${target.name}`)
+        return
+      }
+
       const actorState = snapshotCombatantState(attacker)
       const targetStateBefore = snapshotCombatantState(target)
 
@@ -465,6 +471,35 @@ function getBasePower(attacker, attackType) {
   }
 
   return attacker.melee
+}
+
+function calculateHitChance(attacker, defender, attackType) {
+  if (attackType === 'melee') {
+    const attackerSkill = attacker.skill ?? 3
+    const defenderSkill = defender.skill ?? 3
+
+    if (attackerSkill > defenderSkill) {
+      return 3 / 6
+    }
+
+    if (attackerSkill < defenderSkill) {
+      return 5 / 6
+    }
+
+    return 4 / 6
+  }
+
+  if (attackType === 'shooting') {
+    const attackerSkill = attacker.skill ?? 3
+    return attackerSkill / 7
+  }
+
+  return 1
+}
+
+function didHit(attacker, defender, attackType) {
+  const hitChance = calculateHitChance(attacker, defender, attackType)
+  return Math.random() < hitChance
 }
 
 function distributeContributorExperience(contributor, damage) {
