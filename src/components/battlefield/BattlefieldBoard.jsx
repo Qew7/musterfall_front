@@ -238,12 +238,14 @@ export function BattlefieldBoard({
                   <small>
                     {unit.modelsRemaining > 0 ? `${unit.modelsRemaining} мод.` : `${unit.currentHealth}/${unit.maxHealth} HP`}
                   </small>
+                  {unit.isRouting && <small className="battlefield-unit__routing">Белый флаг</small>}
                   {unit.attachedHeroes?.length > 0 && (
                     <small className="battlefield-unit__attachment">
                       Герой: {unit.attachedHeroes.map((hero) => hero.name).join(', ')}
                     </small>
                   )}
                 </span>
+                {unit.isRouting && <span className="battlefield-unit__flag" aria-hidden="true">&#9872;</span>}
               </button>
 
               {onUnitRotateStart && (

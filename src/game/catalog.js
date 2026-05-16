@@ -67,6 +67,7 @@ function normalizeTemplate(entry) {
     ranged: expectNumber(entry.ranged, 'templates[].ranged'),
     spell: expectNumber(entry.spell, 'templates[].spell'),
     movement: expectNumber(entry.movement, 'templates[].movement'),
+    morale: expectNumber(entry.morale, 'templates[].morale'),
     shootingRange: expectNumber(entry.shootingRange, 'templates[].shootingRange'),
     spellRange: expectNumber(entry.spellRange, 'templates[].spellRange'),
     shootingTemplate: expectString(entry.shootingTemplate, 'templates[].shootingTemplate'),

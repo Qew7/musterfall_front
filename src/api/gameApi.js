@@ -113,6 +113,7 @@ function serializePhaseAction(action) {
     actor_state_after: serializeCombatantState(action.actorStateAfter),
     target_state_before: serializeCombatantState(action.targetStateBefore),
     target_state_after: serializeCombatantState(action.targetStateAfter),
+    morale_check: serializeMoraleCheck(action.moraleCheck),
     template: serializeTemplate(action.template),
     charge: serializeCharge(action.charge),
   }
@@ -137,6 +138,7 @@ function serializeCombatantState(state) {
     max_health: state.maxHealth,
     model_health: state.modelHealth,
     models_remaining: state.modelsRemaining,
+    starting_models: state.startingModels,
     frontage: state.frontage,
     max_files: state.maxFiles,
     files: state.files,
@@ -144,9 +146,11 @@ function serializeCombatantState(state) {
     base_width: state.baseWidth,
     base_depth: state.baseDepth,
     movement: state.movement,
+    morale: state.morale,
     melee: state.melee,
     ranged: state.ranged,
     spell: state.spell,
+    is_routing: state.isRouting,
     armor_type: state.armorType,
     weapon_type: state.weaponType,
     attached_heroes: Array.isArray(state.attachedHeroes)
@@ -156,6 +160,33 @@ function serializeCombatantState(state) {
         slot: hero.slot,
       }))
       : [],
+  }
+}
+
+function serializeMoraleCheck(moraleCheck) {
+  if (!moraleCheck) {
+    return undefined
+  }
+
+  return {
+    source_phase: moraleCheck.sourcePhase,
+    trigger: moraleCheck.trigger,
+    effective_morale: moraleCheck.effectiveMorale,
+    morale_source: moraleCheck.moraleSource,
+    threshold: moraleCheck.threshold,
+    roll: moraleCheck.roll,
+    passed: moraleCheck.passed,
+    failure_margin: moraleCheck.failureMargin,
+    combat_score_delta: moraleCheck.combatScoreDelta,
+    phase_damage: moraleCheck.phaseDamage,
+    lost_models: moraleCheck.lostModels,
+    starting_models: moraleCheck.startingModels,
+    phase_start_models: moraleCheck.phaseStartModels,
+    threshold_models: moraleCheck.thresholdModels,
+    status_before: moraleCheck.statusBefore,
+    status_after: moraleCheck.statusAfter,
+    damage_applied: moraleCheck.damageApplied,
+    retreat_edge: moraleCheck.retreatEdge,
   }
 }
 

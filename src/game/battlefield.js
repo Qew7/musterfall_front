@@ -7,6 +7,7 @@ export const battlefieldConfig = {
   frontArcDegrees: 120,
   wheelStepDegrees: 45,
   contactPadding: 0.35,
+  meleeContactTolerance: 0.4,
   blastRadius: 1.6,
   volleyRadius: 1.4,
 }

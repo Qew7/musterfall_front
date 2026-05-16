@@ -23,6 +23,7 @@ export function createUnitEntity(catalog, templateId, ownerId) {
         ranged: template.ranged,
         spell: 0,
         movement: template.movement,
+        morale: template.morale,
         shootingRange: template.shootingRange,
         spellRange: template.spellRange,
         shootingTemplate: template.shootingTemplate,
@@ -55,6 +56,7 @@ export function createUnitEntity(catalog, templateId, ownerId) {
     state: {
       currentHealth: maxHealth,
       attachedHeroIds: [],
+      isRouting: false,
     },
   }
 
@@ -79,6 +81,7 @@ export function createHeroEntity(catalog, templateId, ownerId, free = false) {
         ranged: template.ranged,
         spell: template.spell,
         movement: template.movement,
+        morale: template.morale,
         shootingRange: template.shootingRange,
         spellRange: template.spellRange,
         shootingTemplate: template.shootingTemplate,
@@ -120,6 +123,7 @@ export function createHeroEntity(catalog, templateId, ownerId, free = false) {
       currentHealth: template.modelHealth,
       attachedTo: null,
       attachedSlot: null,
+      isRouting: false,
     },
   }
 

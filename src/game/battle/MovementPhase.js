@@ -13,6 +13,7 @@ export function playMovementPhase({ actingSide, targetSide }) {
   const phase = createBattlePhase('movement', 'Фаза движения')
   const mobileCombatants = actingSide.combatants
     .filter((entry) => entry.currentHealth > 0)
+    .filter((entry) => !entry.isRouting)
     .filter((entry) => entry.melee > entry.ranged + entry.spell)
 
   let movedCount = 0

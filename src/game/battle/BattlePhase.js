@@ -17,7 +17,7 @@ import {
 import { snapshotBattlefieldState, snapshotCombatantState, syncCombatantFootprint } from './support'
 
 const battleRows = rowOrder.filter((row) => row !== 'reserve')
-const contactTolerance = 0.4
+const contactTolerance = battlefieldConfig.meleeContactTolerance
 
 export function createBattlePhase(type, label) {
   return {
@@ -211,6 +211,10 @@ function describeVector(vector) {
 }
 
 function canAttack(attacker, attackType) {
+  if (attacker.isRouting) {
+    return false
+  }
+
   if (attackType === 'magic') {
     return attacker.spell > 0
   }

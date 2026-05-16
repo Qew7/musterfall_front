@@ -68,11 +68,13 @@ export function snapshotSide(player, side, catalog) {
       modelWidth: entry.modelWidth,
       modelDepth: entry.modelDepth,
       movement: entry.movement,
+      morale: entry.morale,
       shootingRange: entry.shootingRange,
       spellRange: entry.spellRange,
       shootingTemplate: entry.shootingTemplate,
       spellTemplate: entry.spellTemplate,
       requiresLineOfSight: entry.requiresLineOfSight,
+      isRouting: entry.isRouting,
       attachedHeroes: entry.attachedHeroes ?? [],
     })),
   }
@@ -112,11 +114,13 @@ export function snapshotBattlefieldState(sides) {
       maxHealth: entry.maxHealth,
       modelsRemaining: entry.modelsRemaining,
       movement: entry.movement,
+      morale: entry.morale,
       shootingRange: entry.shootingRange,
       spellRange: entry.spellRange,
       shootingTemplate: entry.shootingTemplate,
       spellTemplate: entry.spellTemplate,
       requiresLineOfSight: entry.requiresLineOfSight,
+      isRouting: entry.isRouting,
       attachedHeroes: entry.attachedHeroes ?? [],
     }))
 }
@@ -136,6 +140,7 @@ export function snapshotCombatantState(combatant) {
     maxHealth: combatant.maxHealth,
     modelHealth: combatant.modelHealth,
     modelsRemaining: combatant.modelsRemaining,
+    startingModels: combatant.startingModels,
     frontage: combatant.frontage,
     maxFiles: combatant.maxFiles,
     files: combatant.files,
@@ -143,9 +148,11 @@ export function snapshotCombatantState(combatant) {
     baseWidth: combatant.baseWidth,
     baseDepth: combatant.baseDepth,
     movement: combatant.movement,
+    morale: combatant.morale,
     melee: combatant.melee,
     ranged: combatant.ranged,
     spell: combatant.spell,
+    isRouting: combatant.isRouting,
     armorType: combatant.armorType,
     weaponType: combatant.weaponType,
     attachedHeroes: combatant.attachedHeroes ?? [],
@@ -293,6 +300,7 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
     modelWidth: entity.components.formation.modelWidth,
     modelDepth: entity.components.formation.modelDepth,
     movement: entity.components.combat.movement,
+    morale: entity.components.combat.morale,
     shootingRange: entity.components.combat.shootingRange,
     spellRange: entity.components.combat.spellRange,
     shootingTemplate: entity.components.combat.shootingTemplate,
@@ -307,10 +315,14 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
     currentHealth: entity.state.currentHealth,
     maxHealth: entity.components.health.max,
     modelHealth: entity.components.health.modelHealth,
+    startingModels: Math.max(1, Math.ceil(entity.state.currentHealth / entity.components.health.modelHealth)),
+    isRouting: Boolean(entity.state.isRouting),
     attachedHeroes: attachedHeroes.map((hero) => ({
       entityId: hero.id,
       name: hero.name,
       slot: hero.state.attachedSlot,
+      morale: hero.components.combat.morale,
+      abilities: [...hero.components.abilities],
     })),
     abilities,
     contributors: {
@@ -325,10 +337,14 @@ function syncSide(player, side) {
     const entity = player.roster.find((entry) => entry.id === combatant.entityId)
     if (entity) {
       entity.state.currentHealth = combatant.currentHealth
+      entity.state.isRouting = combatant.isRouting
       entity.components.formation.files = combatant.files
       entity.components.formation.ranks = combatant.ranks
       entity.components.formation.row = combatant.row
       entity.components.formation.lane = combatant.lane
+      entity.components.formation.x = combatant.x
+      entity.components.formation.y = combatant.y
+      entity.components.formation.facing = combatant.facing
       entity.components.formation.width = combatant.baseWidth
       entity.components.formation.depth = combatant.baseDepth
     }

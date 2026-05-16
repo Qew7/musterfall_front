@@ -45,6 +45,7 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
                 <span>{entity.components.combat.armorType}</span>
                 <span>{entity.components.combat.weaponType}</span>
                 <span>MV {entity.components.combat.movement}</span>
+                <span>MO {entity.components.combat.morale}</span>
                 <span>{entity.components.formation.row === 'reserve' ? 'Резерв' : getFacingLabel(entity.components.formation.facing)}</span>
               </div>
 
