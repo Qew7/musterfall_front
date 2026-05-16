@@ -6,11 +6,15 @@ import {
   getChargeDestination,
   getClosestPointOnUnit,
   getDistanceBetweenUnits,
+  getFacingVector,
   getHeadingTo,
+  getPointInLocalUnitSpace,
   isInFrontArc,
   getLineOfSightBlockers,
+  getUnitCorners,
+  getRightVector,
 } from '../battlefield'
-import { snapshotBattlefieldState, syncCombatantFootprint } from './support'
+import { snapshotBattlefieldState, snapshotCombatantState, syncCombatantFootprint } from './support'
 
 const battleRows = rowOrder.filter((row) => row !== 'reserve')
 const contactTolerance = 0.4
@@ -50,37 +54,68 @@ export function resolveAttackPhase({ phase, actingSide, targetSide, roundNumber,
     const { target, vector } = targetSelection
     const blockers = attacker.requiresLineOfSight ? getLineOfSightBlockers(attacker, target, allCombatants) : []
     const victims = attackType === 'melee' ? [{ target, multiplier: 1 }] : getAttackVictims(attacker, target, targetSide.combatants, attackType)
-    const damage = calculateDamage(attacker, target, attackType, vector, roundNumber)
+    const attackEntries = attackType === 'melee'
+      ? buildMeleeAttackEntries(attacker, target, vector, roundNumber)
+      : [{
+          actorId: attacker.entityId,
+          actorUnitId: attacker.entityId,
+          actorName: attacker.name,
+          actorRole: attacker.kind === 'hero' ? 'hero' : 'unit',
+          profile: attacker,
+          damage: calculateDamage(attacker, target, attackType, vector, roundNumber),
+        }]
 
-    if (damage <= 0) {
-      return
-    }
+    attackEntries.forEach((entry) => {
+      if (target.currentHealth <= 0 || entry.damage <= 0) {
+        return
+      }
 
-    target.currentHealth = Math.max(0, target.currentHealth - damage)
-    syncCombatantFootprint(target)
-    distributeExperience(attacker, attackType, damage)
-    addPhaseEvent(phase, `${attacker.name} наносит ${damage} урона по ${target.name} (${vector})`)
-    phase.actions.push({
-      type: attackType,
-      actorId: attacker.entityId,
-      actorName: attacker.name,
-      targetId: target.entityId,
-      targetName: target.name,
-      vector,
-      damage,
-      blockers: blockers.map((entry) => entry.entityId),
-      requiresLineOfSight: attacker.requiresLineOfSight,
-      template: attackType === 'melee' ? null : getAttackTemplateDescriptor(attacker, target, victims, attackType),
-      affectedIds: victims.map((entry) => entry.target.entityId),
-      charge: attackType === 'melee' && getDistanceBetweenUnits(attacker, target) > contactTolerance
-        ? {
-            start: { x: attacker.x, y: attacker.y, facing: attacker.facing },
-            destination: getChargeDestination(attacker, target, getHeadingTo(attacker, target)),
-            contactPoint: getClosestPointOnUnit(attacker, target),
-            vector,
-          }
-        : null,
-      snapshot: snapshotBattlefieldState([actingSide, targetSide]),
+      const actorState = snapshotCombatantState(attacker)
+      const targetStateBefore = snapshotCombatantState(target)
+
+      target.currentHealth = Math.max(0, target.currentHealth - entry.damage)
+      syncCombatantFootprint(target)
+
+      const targetStateAfter = snapshotCombatantState(target)
+
+      if (attackType === 'melee') {
+        distributeContributorExperience(entry.profile, entry.damage)
+      } else {
+        distributeExperience(attacker, attackType, entry.damage)
+      }
+
+      addPhaseEvent(phase, `${formatBattleActor(entry.actorRole, entry.actorName)} наносит ${entry.damage} урона по ${target.name} (${vector})`)
+      const action = {
+        type: attackType,
+        actorId: entry.actorId,
+        actorUnitId: entry.actorUnitId,
+        actorName: entry.actorName,
+        actorRole: entry.actorRole,
+        targetId: target.entityId,
+        targetName: target.name,
+        vector,
+        damage: entry.damage,
+        blockers: blockers.map((blocker) => blocker.entityId),
+        requiresLineOfSight: attacker.requiresLineOfSight,
+        template: attackType === 'melee' ? null : getAttackTemplateDescriptor(attacker, target, victims, attackType),
+        affectedIds: victims.map((victim) => victim.target.entityId),
+        actorState,
+        targetStateBefore,
+        targetStateAfter,
+        charge: attackType === 'melee' && getDistanceBetweenUnits(attacker, target) > contactTolerance
+          ? {
+              start: { x: attacker.x, y: attacker.y, facing: attacker.facing },
+              destination: getChargeDestination(attacker, target, getHeadingTo(attacker, target)),
+              contactPoint: getClosestPointOnUnit(attacker, target),
+              vector,
+            }
+          : null,
+        snapshot: snapshotBattlefieldState([actingSide, targetSide]),
+      }
+
+      action.summary = summarizeAttackAction(action, phase.type)
+      action.details = buildAttackActionDetails(action)
+      phase.actions.push(action)
     })
   })
 
@@ -124,6 +159,55 @@ function getAttackTemplateDescriptor(attacker, target, victims, attackType) {
     kind: templateKind,
     affectedIds: victims.map((entry) => entry.target.entityId),
   }
+}
+
+function summarizeAttackAction(action, phaseType) {
+  const actorLabel = formatBattleActor(action.actorRole, action.actorName)
+
+  if (phaseType === 'melee') {
+    return `${actorLabel} атакует ${action.targetName} в ${describeVector(action.vector)} и наносит ${action.damage} урона.`
+  }
+
+  if (phaseType === 'shooting') {
+    return `${actorLabel} стреляет по ${action.targetName} и наносит ${action.damage} урона.`
+  }
+
+  return `${actorLabel} применяет магию по ${action.targetName} и наносит ${action.damage} урона.`
+}
+
+function buildAttackActionDetails(action) {
+  const details = [
+    `Атакующий до удара: ${formatCombatantState(action.actorState)}`,
+    `Цель до удара: ${formatCombatantState(action.targetStateBefore)}`,
+    `Урон: ${action.damage}, направление: ${describeVector(action.vector)}, затронуто целей: ${(action.affectedIds ?? []).length}`,
+    `Цель после удара: ${formatCombatantState(action.targetStateAfter)}`,
+  ]
+
+  if ((action.blockers ?? []).length > 0) {
+    details.push(`Помехи по линии атаки: ${(action.blockers ?? []).join(', ')}`)
+  }
+
+  return details
+}
+
+function formatCombatantState(state) {
+  if (!state) {
+    return 'нет данных'
+  }
+
+  return `${state.name} HP ${state.currentHealth}/${state.maxHealth}, моделей ${state.modelsRemaining}, строй ${state.row}/${state.lane}, ряды ${state.ranks}, файлы ${state.files}`
+}
+
+function describeVector(vector) {
+  if (vector === 'rear') {
+    return 'тыл'
+  }
+
+  if (vector === 'flank') {
+    return 'фланг'
+  }
+
+  return 'фронт'
 }
 
 function canAttack(attacker, attackType) {
@@ -233,6 +317,7 @@ function calculateDamage(attacker, defender, attackType, vector, roundNumber) {
     return 0
   }
 
+  const attackAbilities = attacker.abilities ?? new Set()
   const weaponType = attackType === 'magic' ? 'magic' : attacker.weaponType
   const armorFactor = weaponVsArmor[defender.armorType]?.[weaponType] ?? 1
   const facingFactor = defender.abilities.has('skirmisher')
@@ -243,13 +328,127 @@ function calculateDamage(attacker, defender, attackType, vector, roundNumber) {
         ? 1.25
         : 1
   const phaseFactor = attackType === 'shooting' ? 0.9 : 1
-  const chargeFactor = attacker.abilities.has('charge') && roundNumber === 1 && attackType === 'melee' ? 1.3 : 1
+  const chargeFactor = attackAbilities.has('charge') && roundNumber === 1 && attackType === 'melee' ? 1.3 : 1
   const steadyFactor = defender.abilities.has('steadfast') && vector === 'front' ? 0.85 : 1
-  const ferociousFactor = attacker.abilities.has('ferocious') && attackType === 'melee' ? 1.1 : 1
-  const machineFactor = attacker.abilities.has('machine') && attackType === 'shooting' ? 1.25 : 1
+  const ferociousFactor = attackAbilities.has('ferocious') && attackType === 'melee' ? 1.1 : 1
+  const machineFactor = attackAbilities.has('machine') && attackType === 'shooting' ? 1.25 : 1
   const raw = basePower * armorFactor * facingFactor * phaseFactor * chargeFactor * steadyFactor * ferociousFactor * machineFactor
 
   return Math.max(1, Math.round(raw / 2.2))
+}
+
+function buildMeleeAttackEntries(attacker, defender, vector, roundNumber) {
+  const engagedModelCount = getEngagedModelCount(attacker, defender)
+  const attackerContactSide = getDetailedContactSide(attacker, defender)
+
+  if (engagedModelCount <= 0) {
+    return []
+  }
+
+  const [primaryContributor, ...attachedContributors] = attacker.contributors.melee
+  const entries = []
+
+  if (primaryContributor) {
+    const primaryProfile = {
+      ...primaryContributor,
+      melee: primaryContributor.power * engagedModelCount,
+    }
+
+    entries.push({
+      actorId: primaryContributor.entityId,
+      actorUnitId: attacker.entityId,
+      actorName: primaryContributor.kind === 'unit' && engagedModelCount > 1
+        ? `${attacker.name} (${engagedModelCount} моделей)`
+        : primaryContributor.name,
+      actorRole: primaryContributor.kind === 'hero' ? 'hero' : 'unit',
+      profile: primaryProfile,
+      damage: calculateDamage(primaryProfile, defender, 'melee', vector, roundNumber),
+    })
+  }
+
+  attachedContributors
+    .filter((contributor) => contributor.kind === 'hero')
+    .filter((contributor) => isHeroContributorEligibleForSide(contributor, attackerContactSide))
+    .forEach((contributor) => {
+      entries.push({
+        actorId: contributor.entityId,
+        actorUnitId: attacker.entityId,
+        actorName: contributor.name,
+        actorRole: 'hero',
+        profile: {
+          ...contributor,
+          melee: contributor.power,
+        },
+        damage: calculateDamage({ ...contributor, melee: contributor.power }, defender, 'melee', vector, roundNumber),
+      })
+    })
+
+  return entries
+}
+
+function getEngagedModelCount(attacker, defender) {
+  const contactSide = getDetailedContactSide(attacker, defender)
+  const sideCapacity = getSideModelCapacity(attacker, contactSide)
+
+  if (sideCapacity <= 0) {
+    return 0
+  }
+
+  const contactSpan = getContactSpan(attacker, defender, contactSide)
+  const modelSpan = getModelSpan(attacker, contactSide)
+
+  if (modelSpan <= 0) {
+    return Math.max(1, sideCapacity)
+  }
+
+  const engagedModels = Math.ceil((contactSpan + contactTolerance) / modelSpan)
+  return Math.max(1, Math.min(sideCapacity, engagedModels))
+}
+
+function getSideModelCapacity(unit, contactSide) {
+  if (unit.kind === 'hero') {
+    return unit.currentHealth > 0 ? 1 : 0
+  }
+
+  if (contactSide === 'left' || contactSide === 'right') {
+    return Math.max(0, unit.ranks ?? 0)
+  }
+
+  return Math.max(0, unit.files ?? 0)
+}
+
+function getModelSpan(unit, contactSide) {
+  if (contactSide === 'left' || contactSide === 'right') {
+    return Math.max(unit.modelDepth ?? 0, 0)
+  }
+
+  return Math.max(unit.modelWidth ?? 0, 0)
+}
+
+function getContactSpan(attacker, defender, contactSide) {
+  const axis = getContactAxis(attacker, contactSide)
+  const attackerProjection = projectUnitOntoAxis(attacker, axis)
+  const defenderProjection = projectUnitOntoAxis(defender, axis)
+  const overlap = Math.min(attackerProjection.max, defenderProjection.max) - Math.max(attackerProjection.min, defenderProjection.min)
+
+  return Math.max(0, overlap)
+}
+
+function getContactAxis(unit, contactSide) {
+  if (contactSide === 'left' || contactSide === 'right') {
+    return getFacingVector(unit.facing)
+  }
+
+  return getRightVector(unit.facing)
+}
+
+function projectUnitOntoAxis(unit, axis) {
+  const dots = getUnitCorners(unit).map((point) => point.x * axis.x + point.y * axis.y)
+
+  return {
+    min: Math.min(...dots),
+    max: Math.max(...dots),
+  }
 }
 
 function getBasePower(attacker, attackType) {
@@ -262,6 +461,36 @@ function getBasePower(attacker, attackType) {
   }
 
   return attacker.melee
+}
+
+function distributeContributorExperience(contributor, damage) {
+  if (contributor.kind !== 'hero') {
+    return
+  }
+
+  contributor.experienceGain += Math.max(1, damage)
+}
+
+function getDetailedContactSide(unit, opponent) {
+  const local = getPointInLocalUnitSpace(opponent, unit)
+
+  if (Math.abs(local.longitudinal) >= Math.abs(local.lateral)) {
+    return local.longitudinal >= 0 ? 'front' : 'rear'
+  }
+
+  return local.lateral >= 0 ? 'right' : 'left'
+}
+
+function isHeroContributorEligibleForSide(contributor, contactSide) {
+  if (!contributor.attachedSlot) {
+    return true
+  }
+
+  return contributor.attachedSlot === contactSide
+}
+
+function formatBattleActor(actorRole, actorName) {
+  return actorRole === 'hero' ? `Герой ${actorName}` : `Отряд ${actorName}`
 }
 
 function distributeExperience(attacker, attackType, damage) {

@@ -88,6 +88,7 @@ export function dismissEntity(campaign, playerId, entityId) {
     }
     if (entry.kind === 'hero' && entry.state.attachedTo === entityId) {
       entry.state.attachedTo = null
+      entry.state.attachedSlot = null
     }
   })
 
@@ -140,6 +141,7 @@ export function attachHero(campaign, playerId, heroId, unitId) {
 
   if (hero.state.attachedTo === unitId) {
     hero.state.attachedTo = null
+    hero.state.attachedSlot = null
     unit.state.attachedHeroIds = unit.state.attachedHeroIds.filter((entry) => entry !== heroId)
     return next
   }
@@ -151,6 +153,7 @@ export function attachHero(campaign, playerId, heroId, unitId) {
   })
 
   hero.state.attachedTo = unitId
+  hero.state.attachedSlot = pickAttachedHeroSlot(player, unitId, heroId)
   syncAttachedHeroFormation(hero, unit)
   unit.state.attachedHeroIds = [...new Set([...unit.state.attachedHeroIds, heroId])]
 
@@ -467,4 +470,18 @@ function syncAttachedHeroFormation(hero, host) {
   hero.components.formation.x = host.components.formation.x
   hero.components.formation.y = host.components.formation.y
   hero.components.formation.facing = host.components.formation.facing
+}
+
+function pickAttachedHeroSlot(player, unitId, heroId) {
+  const slotOrder = ['front', 'left', 'right', 'rear']
+  const occupiedSlots = new Set(
+    player.roster
+      .filter((entry) => entry.kind === 'hero')
+      .filter((entry) => entry.id !== heroId)
+      .filter((entry) => entry.state.attachedTo === unitId)
+      .map((entry) => entry.state.attachedSlot)
+      .filter(Boolean),
+  )
+
+  return slotOrder.find((slot) => !occupiedSlots.has(slot)) ?? 'rear'
 }

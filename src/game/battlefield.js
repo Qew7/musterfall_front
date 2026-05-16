@@ -198,8 +198,8 @@ export function moveAlongFacing(position, distance) {
 
 export function getUnitDimensions(unit) {
   return {
-    halfWidth: Math.max(0.5, (unit.baseWidth ?? unit.width ?? 1) / 2),
-    halfDepth: Math.max(0.5, (unit.baseDepth ?? unit.depth ?? 1) / 2),
+    halfWidth: Math.max(0, (unit.baseWidth ?? unit.width ?? 0) / 2),
+    halfDepth: Math.max(0, (unit.baseDepth ?? unit.depth ?? 0) / 2),
   }
 }
 

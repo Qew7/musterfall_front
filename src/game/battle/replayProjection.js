@@ -7,6 +7,7 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
       phaseType: 'deployment',
       label: 'Исходная расстановка',
       summary: 'Отряды занимают позиции перед первым ходом.',
+      logEntries: ['Отряды занимают позиции перед первым ходом.'],
       units: initialSnapshot,
       overlay: null,
     },
@@ -21,6 +22,7 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
             phaseType: phase.type,
             label: `Раунд ${round.number} · ${turn.playerName} · ${phase.label}`,
             summary: phase.events[0] ?? 'Фаза без результата.',
+            logEntries: phase.events,
             units: phase.snapshot ?? frames.at(-1)?.units ?? initialSnapshot,
             overlay: null,
           })
@@ -32,7 +34,8 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
             id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-${actionIndex}`,
             phaseType: phase.type,
             label: `Раунд ${round.number} · ${turn.playerName} · ${phase.label}`,
-            summary: summarizeAction(action, phase.type),
+            summary: action.summary ?? summarizeAction(action, phase.type),
+            logEntries: [action.summary ?? summarizeAction(action, phase.type)],
             units: action.snapshot,
             overlay: projectActionOverlay(action, action.snapshot),
           })
@@ -45,23 +48,25 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
 }
 
 function summarizeAction(action, phaseType) {
+  const actorLabel = describeActor(action)
+
   if (phaseType === 'movement') {
-    return `${action.actorName} перестраивается: ${action.from.row} -> ${action.to.row}.`
+    return `${actorLabel} перестраивается: ${action.from.row} -> ${action.to.row}.`
   }
 
   if (phaseType === 'melee') {
-    return `${action.actorName} входит в ${describeVector(action.vector)} ${action.targetName} и наносит ${action.damage} урона.`
+    return `${actorLabel} входит в ${describeVector(action.vector)} ${action.targetName} и наносит ${action.damage} урона.`
   }
 
   if (phaseType === 'shooting') {
-    return `${action.actorName} стреляет по ${action.targetName}; затронуто целей: ${action.affectedIds.length}.`
+    return `${actorLabel} стреляет по ${action.targetName}; затронуто целей: ${action.affectedIds.length}.`
   }
 
   if (phaseType === 'magic') {
-    return `${action.actorName} атакует ${action.targetName} магией; затронуто целей: ${action.affectedIds.length}.`
+    return `${actorLabel} атакует ${action.targetName} магией; затронуто целей: ${action.affectedIds.length}.`
   }
 
-  return action.actorName
+  return actorLabel
 }
 
 function projectActionOverlay(action, units) {
@@ -88,7 +93,7 @@ function projectActionOverlay(action, units) {
   }
 
   return {
-    activeUnitId: action.actorId,
+    activeUnitId: action.actorUnitId ?? action.actorId,
     path: action.charge ? { start: action.charge.start, end: action.charge.destination } : action.template?.shape === 'line' ? action.template : null,
     wheelArc: action.charge
       ? getPreviewOverlay({
@@ -111,6 +116,10 @@ function projectActionOverlay(action, units) {
         }
       : null,
   }
+}
+
+function describeActor(action) {
+  return action.actorRole === 'hero' ? `Герой ${action.actorName}` : `Отряд ${action.actorName}`
 }
 
 function projectTemplate(template) {

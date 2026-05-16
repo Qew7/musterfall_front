@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createRemoteGame, saveBattleReport, saveRoundSnapshot, updateRemoteGame } from '../api/gameApi'
+import { createRemoteGame, saveRoundSnapshot, updateRemoteGame } from '../api/gameApi'
 import { buildMetaReward, createCampaign, prepareCampaignForRound, runCampaignRound } from '../game/engine'
 
 export function useCampaignSession(apiBaseUrl, catalog) {
@@ -68,19 +68,14 @@ export function useCampaignSession(apiBaseUrl, catalog) {
 
       const nextCampaign = runCampaignRound(preparedCampaign, catalog)
 
-      await Promise.all(
-        nextCampaign.lastRoundReport.matchups.map((battle) => {
-          return saveBattleReport(apiBaseUrl, remoteGameId, {
-            roundNumber: nextCampaign.lastRoundReport.round,
-            ...battle,
-          })
-        })
-      )
-
       await saveRoundSnapshot(apiBaseUrl, remoteGameId, {
         roundNumber: preparedCampaign.round,
         phase: 'post_round',
         state: { campaign: nextCampaign },
+        battles: nextCampaign.lastRoundReport.matchups.map((battle) => ({
+          roundNumber: nextCampaign.lastRoundReport.round,
+          ...battle,
+        })),
       })
 
       await updateRemoteGame(apiBaseUrl, remoteGameId, {

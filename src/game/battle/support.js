@@ -73,6 +73,7 @@ export function snapshotSide(player, side, catalog) {
       shootingTemplate: entry.shootingTemplate,
       spellTemplate: entry.spellTemplate,
       requiresLineOfSight: entry.requiresLineOfSight,
+      attachedHeroes: entry.attachedHeroes ?? [],
     })),
   }
 }
@@ -116,7 +117,39 @@ export function snapshotBattlefieldState(sides) {
       shootingTemplate: entry.shootingTemplate,
       spellTemplate: entry.spellTemplate,
       requiresLineOfSight: entry.requiresLineOfSight,
+      attachedHeroes: entry.attachedHeroes ?? [],
     }))
+}
+
+export function snapshotCombatantState(combatant) {
+  return {
+    entityId: combatant.entityId,
+    name: combatant.name,
+    kind: combatant.kind,
+    sideKey: combatant.sideKey,
+    lane: combatant.lane,
+    row: combatant.row,
+    x: combatant.x,
+    y: combatant.y,
+    facing: combatant.facing,
+    currentHealth: combatant.currentHealth,
+    maxHealth: combatant.maxHealth,
+    modelHealth: combatant.modelHealth,
+    modelsRemaining: combatant.modelsRemaining,
+    frontage: combatant.frontage,
+    maxFiles: combatant.maxFiles,
+    files: combatant.files,
+    ranks: combatant.ranks,
+    baseWidth: combatant.baseWidth,
+    baseDepth: combatant.baseDepth,
+    movement: combatant.movement,
+    melee: combatant.melee,
+    ranged: combatant.ranged,
+    spell: combatant.spell,
+    armorType: combatant.armorType,
+    weaponType: combatant.weaponType,
+    attachedHeroes: combatant.attachedHeroes ?? [],
+  }
 }
 
 export function syncBattleState(battle) {
@@ -160,7 +193,15 @@ function buildSide(player, sideKey, sideIndex) {
 
 function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
   const abilities = new Set(entity.components.abilities)
-  const meleeContributors = [{ entityId: entity.id, kind: entity.kind, power: entity.components.combat.melee, experienceGain: 0 }]
+  const meleeContributors = [{
+    entityId: entity.id,
+    name: entity.name,
+    kind: entity.kind,
+    power: entity.components.combat.melee,
+    weaponType: entity.components.combat.weaponType,
+    abilities: new Set(entity.components.abilities),
+    experienceGain: 0,
+  }]
   const rangedContributors = []
   let melee = entity.components.combat.melee
   let ranged = entity.components.combat.ranged
@@ -168,17 +209,43 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
   let weaponType = entity.components.combat.weaponType
 
   if (ranged > 0 || spell > 0) {
-    rangedContributors.push({ entityId: entity.id, kind: entity.kind, power: Math.max(ranged, spell), experienceGain: 0 })
+    rangedContributors.push({
+      entityId: entity.id,
+      name: entity.name,
+      kind: entity.kind,
+      power: Math.max(ranged, spell),
+      weaponType: entity.components.combat.weaponType,
+      abilities: new Set(entity.components.abilities),
+      experienceGain: 0,
+    })
   }
 
   attachedHeroes.forEach((hero) => {
     melee += hero.components.combat.melee
     ranged += hero.components.combat.ranged
     spell += hero.components.combat.spell
-    meleeContributors.push({ entityId: hero.id, kind: hero.kind, power: hero.components.combat.melee, experienceGain: 0 })
+    meleeContributors.push({
+      entityId: hero.id,
+      name: hero.name,
+      kind: hero.kind,
+      power: hero.components.combat.melee,
+      weaponType: hero.components.combat.weaponType,
+      abilities: new Set(hero.components.abilities),
+      attachedSlot: hero.state.attachedSlot,
+      experienceGain: 0,
+    })
 
     if (hero.components.combat.ranged > 0 || hero.components.combat.spell > 0) {
-      rangedContributors.push({ entityId: hero.id, kind: hero.kind, power: Math.max(hero.components.combat.ranged, hero.components.combat.spell), experienceGain: 0 })
+      rangedContributors.push({
+        entityId: hero.id,
+        name: hero.name,
+        kind: hero.kind,
+        power: Math.max(hero.components.combat.ranged, hero.components.combat.spell),
+        weaponType: hero.components.combat.weaponType,
+        abilities: new Set(hero.components.abilities),
+        attachedSlot: hero.state.attachedSlot,
+        experienceGain: 0,
+      })
     }
 
     hero.components.abilities.forEach((ability) => abilities.add(ability))
@@ -189,6 +256,7 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
 
   if (abilities.has('bannerAura')) {
     melee += 1
+    meleeContributors[0].power += 1
   }
 
   if (abilities.has('steadfastAura')) {
@@ -239,6 +307,11 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
     currentHealth: entity.state.currentHealth,
     maxHealth: entity.components.health.max,
     modelHealth: entity.components.health.modelHealth,
+    attachedHeroes: attachedHeroes.map((hero) => ({
+      entityId: hero.id,
+      name: hero.name,
+      slot: hero.state.attachedSlot,
+    })),
     abilities,
     contributors: {
       melee: meleeContributors,

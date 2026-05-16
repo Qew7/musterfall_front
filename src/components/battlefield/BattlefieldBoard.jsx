@@ -140,8 +140,8 @@ export function BattlefieldBoard({
             style={{
               left: `${((previewPlacement.x + 0.5) / width) * 100}%`,
               top: `${((previewPlacement.y + 0.5) / height) * 100}%`,
-              width: `${Math.max(7, (previewPlacement.baseWidth / width) * 100)}%`,
-              height: `${Math.max(7, (previewPlacement.baseDepth / height) * 100)}%`,
+              width: `${(previewPlacement.baseWidth / width) * 100}%`,
+              height: `${(previewPlacement.baseDepth / height) * 100}%`,
               '--facing': `${previewPlacement.facing}deg`,
             }}
           >
@@ -192,8 +192,8 @@ export function BattlefieldBoard({
         )}
 
         {units.map((unit) => {
-          const widthPercent = `${Math.max(7, (unit.baseWidth / width) * 100)}%`
-          const heightPercent = `${Math.max(7, (unit.baseDepth / height) * 100)}%`
+          const widthPercent = `${(unit.baseWidth / width) * 100}%`
+          const heightPercent = `${(unit.baseDepth / height) * 100}%`
           const leftPercent = `${((unit.x + 0.5) / width) * 100}%`
           const topPercent = `${((unit.y + 0.5) / height) * 100}%`
           const isSelected = unit.entityId === selectedUnitId
@@ -238,6 +238,11 @@ export function BattlefieldBoard({
                   <small>
                     {unit.modelsRemaining > 0 ? `${unit.modelsRemaining} мод.` : `${unit.currentHealth}/${unit.maxHealth} HP`}
                   </small>
+                  {unit.attachedHeroes?.length > 0 && (
+                    <small className="battlefield-unit__attachment">
+                      Герой: {unit.attachedHeroes.map((hero) => hero.name).join(', ')}
+                    </small>
+                  )}
                 </span>
               </button>
 
@@ -283,20 +288,84 @@ function BattlefieldUnitModels({ unit }) {
     return null
   }
 
+  const heroSlotMap = getHeroSlotMap(formationLayout, unit.attachedHeroes ?? [])
+
   return (
     <span className="battlefield-unit__models" aria-hidden="true">
       {formationLayout.slots.map((slot) => (
         <span
           key={slot.id}
-          className={`battlefield-unit__model battlefield-unit__model--${unit.modelClass ?? 'infantry'}`}
+          className={`battlefield-unit__model battlefield-unit__model--${unit.modelClass ?? 'infantry'} ${heroSlotMap.has(slot.id) ? 'battlefield-unit__model--hero' : ''}`}
+          title={heroSlotMap.get(slot.id)?.name ?? undefined}
           style={{
             left: `${(slot.x / formationLayout.gridWidth) * 100}%`,
             top: `${(slot.y / formationLayout.gridDepth) * 100}%`,
             width: `${(slot.width / formationLayout.gridWidth) * 100}%`,
             height: `${(slot.depth / formationLayout.gridDepth) * 100}%`,
           }}
-        />
+        >
+          {heroSlotMap.has(slot.id) && <span className="battlefield-unit__hero-mark" />}
+        </span>
       ))}
     </span>
   )
+}
+
+function getHeroSlotMap(layout, attachedHeroes) {
+  const map = new Map()
+
+  attachedHeroes.forEach((hero) => {
+    const slot = findHeroModelSlot(layout, hero.slot)
+    if (slot) {
+      map.set(slot.id, hero)
+    }
+  })
+
+  return map
+}
+
+function findHeroModelSlot(layout, heroSide) {
+  if (!heroSide || layout.slots.length === 0) {
+    return null
+  }
+
+  const centerFile = (layout.files - 1) / 2
+  const centerRank = (layout.ranks - 1) / 2
+
+  const matches = layout.slots.filter((slot) => {
+    if (heroSide === 'front') {
+      return slot.rank === 0
+    }
+
+    if (heroSide === 'rear') {
+      return slot.rank === layout.ranks - 1
+    }
+
+    if (heroSide === 'left') {
+      return slot.file === 0
+    }
+
+    if (heroSide === 'right') {
+      return slot.file === layout.files - 1
+    }
+
+    return false
+  })
+
+  if (matches.length === 0) {
+    return null
+  }
+
+  return matches
+    .slice()
+    .sort((left, right) => {
+      const leftDistance = heroSide === 'front' || heroSide === 'rear'
+        ? Math.abs(left.file - centerFile)
+        : Math.abs(left.rank - centerRank)
+      const rightDistance = heroSide === 'front' || heroSide === 'rear'
+        ? Math.abs(right.file - centerFile)
+        : Math.abs(right.rank - centerRank)
+
+      return leftDistance - rightDistance || left.index - right.index
+    })[0]
 }

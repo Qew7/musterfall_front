@@ -38,17 +38,24 @@ export function simulateBattle(playerA, playerB, catalog) {
     winnerId,
     winnerName: winnerId === playerA.id ? playerA.name : playerB.name,
     summary: `${playerA.name} ${totalA} vs ${totalB} ${playerB.name}`,
-    events: flattenBattleEvents(battle.rounds).slice(0, 48),
+    events: flattenBattleEvents(battle.rounds).slice(0, 24),
     replay: projectBattleReplay({ battle, initialSnapshot }),
   }
 }
 
 function flattenBattleEvents(rounds) {
   return rounds.flatMap((round) => {
-    const turnEvents = round.turns.flatMap((turn) => [
-      `Ход игрока: ${turn.playerName}`,
-      ...turn.phases.flatMap((phase) => [phase.label, ...phase.events]),
-    ])
+    const turnEvents = round.turns.flatMap((turn) => {
+      const phaseEvents = turn.phases.flatMap((phase) => {
+        if (phase.actions.length > 0) {
+          return phase.actions.map((action) => action.summary)
+        }
+
+        return phase.events.slice(0, 1).map((entry) => `${phase.label}: ${entry}`)
+      })
+
+      return [`Ход игрока: ${turn.playerName}`, ...phaseEvents]
+    })
 
     return [`Раунд ${round.number}`, ...turnEvents, ...round.events]
   })

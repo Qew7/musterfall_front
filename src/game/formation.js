@@ -1,4 +1,4 @@
-export function getFormationMetrics({ modelsRemaining, frontage, maxFiles, modelWidth, modelDepth }) {
+function getFormationShape({ modelsRemaining, frontage, maxFiles, modelWidth, modelDepth }) {
   if (modelsRemaining <= 0) {
     return {
       files: 0,
@@ -23,6 +23,10 @@ export function getFormationMetrics({ modelsRemaining, frontage, maxFiles, model
   }
 }
 
+export function getFormationMetrics({ modelsRemaining, frontage, maxFiles, modelWidth, modelDepth }) {
+  return getFormationShape({ modelsRemaining, frontage, maxFiles, modelWidth, modelDepth })
+}
+
 export function buildFormationLayout({ modelsRemaining, frontage, maxFiles, modelWidth, modelDepth }) {
   const metrics = getFormationMetrics({ modelsRemaining, frontage, maxFiles, modelWidth, modelDepth })
   const slots = Array.from({ length: modelsRemaining }, (_, index) => {
@@ -31,6 +35,9 @@ export function buildFormationLayout({ modelsRemaining, frontage, maxFiles, mode
 
     return {
       id: `${file}-${rank}-${index}`,
+      index,
+      file,
+      rank,
       x: file * modelWidth,
       y: rank * modelDepth,
       width: modelWidth,

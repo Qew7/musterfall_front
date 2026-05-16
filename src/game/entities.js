@@ -119,6 +119,7 @@ export function createHeroEntity(catalog, templateId, ownerId, free = false) {
     state: {
       currentHealth: template.modelHealth,
       attachedTo: null,
+      attachedSlot: null,
     },
   }
 

@@ -17,7 +17,7 @@ export function BattleReplayCard({ battle, roundNumber }) {
     return () => window.clearInterval(timer)
   }, [frames.length])
 
-  const frame = frames[frameIndex] ?? { units: [], label: 'Нет кадров боя', summary: 'Replay не содержит кадров.' }
+  const frame = frames[frameIndex] ?? { units: [], label: 'Нет кадров боя', summary: 'Replay не содержит кадров.', logEntries: [] }
 
   return (
     <article className="battle-card">
@@ -50,8 +50,8 @@ export function BattleReplayCard({ battle, roundNumber }) {
       </div>
 
       <div className="battle-log">
-        {battle.events.map((entry, index) => (
-          <p key={`${battle.battleId}-${index}`}>{entry}</p>
+        {(frame.logEntries?.length > 0 ? frame.logEntries : battle.events).map((entry, index) => (
+          <p key={`${battle.battleId}-${frame.id ?? 'fallback'}-${index}`}>{entry}</p>
         ))}
       </div>
     </article>
