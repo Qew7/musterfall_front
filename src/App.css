@@ -473,6 +473,7 @@
   position: absolute;
   inset: 0;
   border-radius: 12px;
+  overflow: hidden;
   transform: rotate(calc(var(--facing) + 90deg));
   transform-origin: center center;
   border: 1px solid rgba(76, 45, 12, 0.22);
@@ -529,16 +530,42 @@
 .battlefield-unit__label {
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
   display: grid;
   gap: 2px;
-  padding: 6px 10px;
+  padding: 4px 8px;
   border-radius: 12px;
-  background: rgba(255, 250, 243, 0.82);
+  background: rgba(255, 250, 243, 0.9);
   backdrop-filter: blur(2px);
   box-shadow: 0 6px 14px rgba(40, 21, 8, 0.08);
   min-width: max-content;
+  z-index: 2;
+}
+
+.battlefield-unit__models {
+  position: absolute;
+  inset: 10% 9%;
+  z-index: 0;
+}
+
+.battlefield-unit__model {
+  position: absolute;
+  border-radius: 4px;
+  background: linear-gradient(180deg, rgba(93, 54, 28, 0.92), rgba(45, 23, 9, 0.96));
+  border: 1px solid rgba(255, 244, 228, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.battlefield-unit__model--cavalry {
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(122, 78, 36, 0.94), rgba(69, 35, 12, 0.98));
+}
+
+.battlefield-unit__model--monster,
+.battlefield-unit__model--machine {
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(87, 65, 47, 0.94), rgba(36, 24, 16, 0.98));
 }
 
 .battlefield-unit__face {
@@ -753,6 +780,49 @@
   padding: 10px 12px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.6);
+}
+
+.entity-card__formation {
+  display: grid;
+  gap: 8px;
+}
+
+.entity-card__formation-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  color: rgba(76, 45, 12, 0.72);
+}
+
+.entity-card__formation-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--formation-columns), minmax(0, 14px));
+  grid-template-rows: repeat(var(--formation-rows), 14px);
+  grid-auto-flow: dense;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 250, 243, 0.74);
+  border: 1px solid rgba(76, 45, 12, 0.08);
+}
+
+.entity-card__formation-model {
+  border-radius: 5px;
+  background: linear-gradient(180deg, #704126, #2f1609);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.entity-card__formation-model--cavalry {
+  background: linear-gradient(180deg, #8e5a2e, #4d2810);
+}
+
+.entity-card__formation-model--monster,
+.entity-card__formation-model--machine {
+  border-radius: 8px;
+  background: linear-gradient(180deg, #5c4434, #26160f);
 }
 
 .battlefield {

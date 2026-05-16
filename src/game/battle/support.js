@@ -1,6 +1,7 @@
 import { getFaction } from '../catalog'
-import { createBattlePosition, createDefaultDeployment } from '../battlefield'
+import { createBattlePosition, createDefaultDeployment, getFrontCenter } from '../battlefield'
 import { isDeployable } from '../entities'
+import { getFormationMetrics } from '../formation'
 
 export function createBattleState(playerA, playerB, catalog) {
   return {
@@ -28,6 +29,7 @@ export function applyFactionPassives(side) {
     const wounded = side.combatants.find((entry) => entry.currentHealth > 0 && entry.currentHealth < entry.maxHealth)
     if (wounded) {
       wounded.currentHealth = Math.min(wounded.maxHealth, wounded.currentHealth + 1)
+      syncCombatantFootprint(wounded)
       events.push(`${side.playerName}: ${wounded.name} восстанавливает 1 здоровье.`)
     }
   }
@@ -52,12 +54,19 @@ export function snapshotSide(player, side, catalog) {
       row: entry.row,
       currentHealth: entry.currentHealth,
       maxHealth: entry.maxHealth,
-      modelsRemaining: Math.max(1, Math.ceil(entry.currentHealth / entry.modelHealth)),
+      modelsRemaining: entry.modelsRemaining,
       x: entry.x,
       y: entry.y,
       facing: entry.facing,
+      frontage: entry.frontage,
+      maxFiles: entry.maxFiles,
+      files: entry.files,
+      ranks: entry.ranks,
       baseWidth: entry.baseWidth,
       baseDepth: entry.baseDepth,
+      modelClass: entry.modelClass,
+      modelWidth: entry.modelWidth,
+      modelDepth: entry.modelDepth,
       movement: entry.movement,
       shootingRange: entry.shootingRange,
       spellRange: entry.spellRange,
@@ -89,11 +98,18 @@ export function snapshotBattlefieldState(sides) {
       x: entry.x,
       y: entry.y,
       facing: entry.facing,
+      frontage: entry.frontage,
+      maxFiles: entry.maxFiles,
+      files: entry.files,
+      ranks: entry.ranks,
       baseWidth: entry.baseWidth,
       baseDepth: entry.baseDepth,
+      modelClass: entry.modelClass,
+      modelWidth: entry.modelWidth,
+      modelDepth: entry.modelDepth,
       currentHealth: entry.currentHealth,
       maxHealth: entry.maxHealth,
-      modelsRemaining: Math.max(1, Math.ceil(entry.currentHealth / entry.modelHealth)),
+      modelsRemaining: entry.modelsRemaining,
       movement: entry.movement,
       shootingRange: entry.shootingRange,
       spellRange: entry.spellRange,
@@ -188,7 +204,7 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
     sideIndex,
   )
 
-  return {
+  return syncCombatantFootprint({
     entityId: entity.id,
     name: entity.name,
     kind: entity.kind,
@@ -199,8 +215,15 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
     x: projectedPosition.x,
     y: projectedPosition.y,
     facing: projectedPosition.facing,
+    frontage: entity.components.formation.frontage,
+    maxFiles: entity.components.formation.maxFiles,
+    files: entity.components.formation.files,
+    ranks: entity.components.formation.ranks,
     baseWidth: entity.components.formation.width,
     baseDepth: entity.components.formation.depth,
+    modelClass: entity.components.formation.modelClass,
+    modelWidth: entity.components.formation.modelWidth,
+    modelDepth: entity.components.formation.modelDepth,
     movement: entity.components.combat.movement,
     shootingRange: entity.components.combat.shootingRange,
     spellRange: entity.components.combat.spellRange,
@@ -221,7 +244,7 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
       melee: meleeContributors,
       ranged: rangedContributors,
     },
-  }
+  })
 }
 
 function syncSide(player, side) {
@@ -229,8 +252,12 @@ function syncSide(player, side) {
     const entity = player.roster.find((entry) => entry.id === combatant.entityId)
     if (entity) {
       entity.state.currentHealth = combatant.currentHealth
+      entity.components.formation.files = combatant.files
+      entity.components.formation.ranks = combatant.ranks
       entity.components.formation.row = combatant.row
       entity.components.formation.lane = combatant.lane
+      entity.components.formation.width = combatant.baseWidth
+      entity.components.formation.depth = combatant.baseDepth
     }
   })
 
@@ -254,4 +281,31 @@ function syncSide(player, side) {
       })
     }
   })
+}
+
+export function syncCombatantFootprint(combatant) {
+  const frontCenter = combatant.baseDepth > 0 ? getFrontCenter(combatant) : null
+  const modelsRemaining = combatant.currentHealth > 0 ? Math.max(1, Math.ceil(combatant.currentHealth / combatant.modelHealth)) : 0
+  const metrics = getFormationMetrics({
+    modelsRemaining,
+    frontage: combatant.frontage,
+    maxFiles: combatant.maxFiles,
+    modelWidth: combatant.modelWidth,
+    modelDepth: combatant.modelDepth,
+  })
+
+  combatant.modelsRemaining = modelsRemaining
+  combatant.files = metrics.files
+  combatant.ranks = metrics.ranks
+  combatant.baseWidth = metrics.footprintWidth
+  combatant.baseDepth = metrics.footprintDepth
+
+  if (frontCenter && combatant.baseDepth > 0) {
+    const radians = combatant.facing * (Math.PI / 180)
+    const halfDepth = combatant.baseDepth / 2
+    combatant.x = frontCenter.x - Math.cos(radians) * halfDepth
+    combatant.y = frontCenter.y - Math.sin(radians) * halfDepth
+  }
+
+  return combatant
 }

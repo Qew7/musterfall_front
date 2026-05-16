@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { BattlefieldBoard } from '../battlefield/BattlefieldBoard'
-import { getFacingLabel, getHeadingTo, rotateFacing } from '../../game/battlefield'
+import { battlefieldConfig, getFacingLabel, getHeadingTo, rotateFacing } from '../../game/battlefield'
 import { autoDeployPlayer, rotateEntityOnBattlefield, setEntityBattlefieldTransform, toggleEntityReserve } from '../../game/engine'
 import { healthToModels } from '../../game/entities'
 import { getPlacementDiagnostics, getPreviewOverlay, getWheelSweepDiagnostics } from '../../game/placementPreview'
@@ -13,23 +13,31 @@ export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
   const [selectedEntityId, setSelectedEntityId] = useState(() => movableEntities[0]?.id ?? null)
   const [dragState, setDragState] = useState(null)
   const selectedEntity = movableEntities.find((entity) => entity.id === selectedEntityId) ?? movableEntities[0] ?? null
-  const interactiveZone = { xMin: 0, xMax: 4, yMin: 0, yMax: 11 }
+  const interactiveZone = { xMin: 0, xMax: battlefieldConfig.deploymentDepth - 1, yMin: 0, yMax: battlefieldConfig.height - 1 }
 
   const snapshot = {
     units: movableEntities
       .filter((entity) => entity.components.formation.row !== 'reserve')
       .map((entity) => ({
         entityId: entity.id,
+        kind: entity.kind,
         sideKey: 'left',
         name: entity.name,
         x: entity.components.formation.x,
         y: entity.components.formation.y,
         facing: entity.components.formation.facing,
+        frontage: entity.components.formation.frontage,
+        maxFiles: entity.components.formation.maxFiles,
+        files: entity.components.formation.files,
+        ranks: entity.components.formation.ranks,
         baseWidth: entity.components.formation.width,
         baseDepth: entity.components.formation.depth,
+        modelClass: entity.components.formation.modelClass,
+        modelWidth: entity.components.formation.modelWidth,
+        modelDepth: entity.components.formation.modelDepth,
         currentHealth: entity.state.currentHealth,
         maxHealth: entity.components.health.max,
-        modelsRemaining: entity.kind === 'unit' ? healthToModels(entity) : entity.state.currentHealth,
+        modelsRemaining: healthToModels(entity),
       })),
   }
   const previewDiagnostics = dragState
@@ -122,12 +130,21 @@ export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
   const previewPlacement = dragState
     ? {
         entityId: dragState.entity.id,
+      kind: dragState.entity.kind,
         name: dragState.entity.name,
         x: dragState.preview.x,
         y: dragState.preview.y,
         facing: dragState.preview.facing,
+      frontage: dragState.entity.components.formation.frontage,
+      maxFiles: dragState.entity.components.formation.maxFiles,
+      files: dragState.entity.components.formation.files,
+      ranks: dragState.entity.components.formation.ranks,
         baseWidth: dragState.entity.components.formation.width,
         baseDepth: dragState.entity.components.formation.depth,
+      modelClass: dragState.entity.components.formation.modelClass,
+      modelWidth: dragState.entity.components.formation.modelWidth,
+      modelDepth: dragState.entity.components.formation.modelDepth,
+        modelsRemaining: healthToModels(dragState.entity),
         isLegal: Boolean(previewDiagnostics?.isLegal) && !wheelDiagnostics?.isBlocked,
         reasons: [...(previewDiagnostics?.reasons ?? []), ...(wheelDiagnostics?.reasons ?? [])],
         wheelBlocked: Boolean(wheelDiagnostics?.isBlocked),

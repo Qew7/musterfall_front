@@ -1,5 +1,6 @@
 import { getFacingLabel } from '../../game/battlefield'
 import { attachHero, dismissEntity, pickHeroDraft, prepareHeroDraft, rotateEntityOnBattlefield, toggleEntityReserve } from '../../game/engine'
+import { buildFormationLayout } from '../../game/formation'
 import { describeHero, getEntityCardData, getFactionPalette, getUpgradeSummary } from '../../game/selectors'
 
 export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCampaign }) {
@@ -16,6 +17,13 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
         {selectedPlayer.roster.map((entity) => {
           const data = getEntityCardData(catalog, entity)
           const factionColor = getFactionPalette(catalog, selectedPlayer.factionId)
+          const formationLayout = buildFormationLayout({
+            modelsRemaining: data.modelsRemaining,
+            frontage: entity.components.formation.frontage,
+            maxFiles: entity.components.formation.maxFiles,
+            modelWidth: entity.components.formation.modelWidth,
+            modelDepth: entity.components.formation.modelDepth,
+          })
 
           return (
             <article key={entity.id} className="entity-card" style={{ '--accent-color': factionColor }}>
@@ -38,6 +46,33 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
                 <span>{entity.components.combat.weaponType}</span>
                 <span>MV {entity.components.combat.movement}</span>
                 <span>{entity.components.formation.row === 'reserve' ? 'Резерв' : getFacingLabel(entity.components.formation.facing)}</span>
+              </div>
+
+              <div className="entity-card__formation">
+                <div className="entity-card__formation-metrics">
+                  <span>{formationLayout.files} в ряд</span>
+                  <span>{formationLayout.ranks} в глубину</span>
+                  <span>{entity.components.formation.width}x{entity.components.formation.depth} footprint</span>
+                  <span>{entity.components.formation.modelClass}</span>
+                </div>
+
+                {formationLayout.slots.length > 0 && (
+                  <div
+                    className="entity-card__formation-grid"
+                    style={{ '--formation-columns': formationLayout.gridWidth, '--formation-rows': formationLayout.gridDepth }}
+                  >
+                    {formationLayout.slots.map((slot) => (
+                      <span
+                        key={slot.id}
+                        className={`entity-card__formation-model entity-card__formation-model--${entity.components.formation.modelClass}`}
+                        style={{
+                          gridColumn: `${slot.x + 1} / span ${slot.width}`,
+                          gridRow: `${slot.y + 1} / span ${slot.depth}`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="entity-card__actions">

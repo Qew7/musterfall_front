@@ -53,11 +53,14 @@ export function getFootprintGeometry(unit) {
 }
 
 export function getFacingZonePolygons(unit, radius = Math.max(unit.baseWidth ?? 1, unit.baseDepth ?? 1) * 2.8) {
+  const geometry = getFootprintGeometry(unit)
+  const [frontLeft, frontRight, rearRight, rearLeft] = geometry.corners
+
   return {
-    front: getSectorPolygon(unit, -60, 60, radius),
-    right: getSectorPolygon(unit, 60, 120, radius),
-    rear: getSectorPolygon(unit, 120, 240, radius),
-    left: getSectorPolygon(unit, 240, 300, radius),
+    front: getCornerSectorPolygon(unit, frontLeft, frontRight, radius),
+    right: getCornerSectorPolygon(unit, frontRight, rearRight, radius),
+    rear: getCornerSectorPolygon(unit, rearRight, rearLeft, radius),
+    left: getCornerSectorPolygon(unit, rearLeft, frontLeft, radius),
   }
 }
 
@@ -195,6 +198,30 @@ function getSectorPolygon(unit, startOffset, endOffset, radius) {
   }
 
   return points
+}
+
+function getCornerSectorPolygon(unit, startCorner, endCorner, radius) {
+  const startAngle = getPointAngle(unit, startCorner)
+  const endAngle = getPointAngle(unit, endCorner)
+  const delta = getShortestFacingDelta(startAngle, endAngle)
+  const points = [toBoardPoint(unit)]
+
+  for (let index = 0; index <= ARC_SAMPLE_STEPS; index += 1) {
+    const progress = index / ARC_SAMPLE_STEPS
+    const angle = startAngle + delta * progress
+    const radians = angle * (Math.PI / 180)
+
+    points.push({
+      x: unit.x + Math.cos(radians) * radius + 0.5,
+      y: unit.y + Math.sin(radians) * radius + 0.5,
+    })
+  }
+
+  return points
+}
+
+function getPointAngle(origin, point) {
+  return Math.atan2(point.y - origin.y, point.x - origin.x) * (180 / Math.PI)
 }
 
 function buildArcPath({ origin, fromAngle, toAngle, radius }) {

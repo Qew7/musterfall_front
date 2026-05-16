@@ -10,7 +10,7 @@ import {
   isInFrontArc,
   getLineOfSightBlockers,
 } from '../battlefield'
-import { snapshotBattlefieldState } from './support'
+import { snapshotBattlefieldState, syncCombatantFootprint } from './support'
 
 const battleRows = rowOrder.filter((row) => row !== 'reserve')
 const contactTolerance = 0.4
@@ -57,6 +57,7 @@ export function resolveAttackPhase({ phase, actingSide, targetSide, roundNumber,
     }
 
     target.currentHealth = Math.max(0, target.currentHealth - damage)
+    syncCombatantFootprint(target)
     distributeExperience(attacker, attackType, damage)
     addPhaseEvent(phase, `${attacker.name} наносит ${damage} урона по ${target.name} (${vector})`)
     phase.actions.push({

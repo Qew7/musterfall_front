@@ -1,9 +1,9 @@
 import { laneOrder, rowOrder } from './constants'
 
 export const battlefieldConfig = {
-  width: 16,
-  height: 12,
-  deploymentDepth: 5,
+  width: 32,
+  height: 24,
+  deploymentDepth: 10,
   frontArcDegrees: 120,
   wheelStepDegrees: 45,
   contactPadding: 0.35,
@@ -11,18 +11,27 @@ export const battlefieldConfig = {
   volleyRadius: 1.4,
 }
 
-const laneAnchors = {
-  left: 2,
-  center: 6,
-  right: 10,
+function createLaneAnchors() {
+  const segment = Math.floor(battlefieldConfig.height / 3)
+
+  return {
+    left: Math.max(1, Math.floor(segment / 2)),
+    center: Math.floor(battlefieldConfig.height / 2),
+    right: Math.min(battlefieldConfig.height - 2, segment * 2 + Math.floor(segment / 2)),
+  }
 }
 
-const rowAnchors = {
-  reserve: 0,
-  rear: 1,
-  support: 2,
-  front: 4,
+function createRowAnchors() {
+  return {
+    reserve: 0,
+    rear: Math.max(1, Math.floor(battlefieldConfig.deploymentDepth * 0.2)),
+    support: Math.max(2, Math.floor(battlefieldConfig.deploymentDepth * 0.4)),
+    front: Math.max(3, battlefieldConfig.deploymentDepth - 2),
+  }
 }
+
+const laneAnchors = createLaneAnchors()
+const rowAnchors = createRowAnchors()
 
 export function normalizeFacing(value) {
   return ((value % 360) + 360) % 360
@@ -107,17 +116,22 @@ export function clampBattlefieldPosition(position) {
 }
 
 export function syncFormationSlotsFromDeployment(position) {
-  const lane = position.y < 4 ? laneOrder[0] : position.y < 8 ? laneOrder[1] : laneOrder[2]
+  const laneBoundary = battlefieldConfig.height / 3
+  const lane = position.y < laneBoundary ? laneOrder[0] : position.y < laneBoundary * 2 ? laneOrder[1] : laneOrder[2]
 
-  if (position.x <= 0) {
+  const reserveLimit = Math.max(0, Math.floor(battlefieldConfig.deploymentDepth * 0.15) - 1)
+  const rearLimit = Math.max(reserveLimit + 1, Math.floor(battlefieldConfig.deploymentDepth * 0.3) - 1)
+  const supportLimit = Math.max(rearLimit + 1, Math.floor(battlefieldConfig.deploymentDepth * 0.5) - 1)
+
+  if (position.x <= reserveLimit) {
     return { lane, row: rowOrder[3] }
   }
 
-  if (position.x <= 1) {
+  if (position.x <= rearLimit) {
     return { lane, row: rowOrder[2] }
   }
 
-  if (position.x <= 2) {
+  if (position.x <= supportLimit) {
     return { lane, row: rowOrder[1] }
   }
 

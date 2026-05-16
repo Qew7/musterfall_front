@@ -22,6 +22,20 @@ function expectNumber(value, fieldName) {
   return value
 }
 
+function normalizeFormationRules(entry) {
+  return {
+    maxFiles: expectNumber(entry.maxFiles, 'formationRules.maxFiles'),
+  }
+}
+
+function normalizeModelClass(entry) {
+  return {
+    id: expectString(entry.id, 'modelClasses[].id'),
+    baseWidth: expectNumber(entry.baseWidth, 'modelClasses[].baseWidth'),
+    baseDepth: expectNumber(entry.baseDepth, 'modelClasses[].baseDepth'),
+  }
+}
+
 function normalizeFaction(entry) {
   return {
     id: expectString(entry.id, 'factions[].id'),
@@ -43,8 +57,10 @@ function normalizeTemplate(entry) {
     cost: expectNumber(entry.cost, 'templates[].cost'),
     models: expectNumber(entry.models, 'templates[].models'),
     modelHealth: expectNumber(entry.modelHealth, 'templates[].modelHealth'),
-    width: expectNumber(entry.width, 'templates[].width'),
-    baseDepth: expectNumber(entry.baseDepth, 'templates[].baseDepth'),
+    frontage: expectNumber(entry.frontage, 'templates[].frontage'),
+    modelClass: expectString(entry.modelClass, 'templates[].modelClass'),
+    modelBaseWidth: expectNumber(entry.modelBaseWidth, 'templates[].modelBaseWidth'),
+    modelBaseDepth: expectNumber(entry.modelBaseDepth, 'templates[].modelBaseDepth'),
     armorType: expectString(entry.armorType, 'templates[].armorType'),
     weaponType: expectString(entry.weaponType, 'templates[].weaponType'),
     melee: expectNumber(entry.melee, 'templates[].melee'),
@@ -81,6 +97,8 @@ function normalizeUpgrade(entry) {
 }
 
 export function createCatalog(payload) {
+  const formationRules = normalizeFormationRules(payload?.formationRules ?? {})
+  const modelClasses = expectArray(payload?.modelClasses, 'modelClasses').map(normalizeModelClass)
   const factions = expectArray(payload?.factions, 'factions').map(normalizeFaction)
   const units = expectArray(payload?.units, 'units').map((entry) => normalizeTemplate({ ...entry, kind: 'unit' }))
   const heroes = expectArray(payload?.heroes, 'heroes').map((entry) => normalizeTemplate({ ...entry, kind: 'hero' }))
@@ -89,6 +107,9 @@ export function createCatalog(payload) {
   const heroUpgrades = expectArray(payload?.hero_upgrades, 'hero_upgrades').map(normalizeUpgrade)
 
   return {
+    formationRules,
+    modelClasses,
+    modelClassesById: new Map(modelClasses.map((entry) => [entry.id, entry])),
     factions,
     factionsById: new Map(factions.map((entry) => [entry.id, entry])),
     abilities,

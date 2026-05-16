@@ -1,4 +1,5 @@
 import { battlefieldConfig } from '../../game/battlefield'
+import { buildFormationLayout } from '../../game/formation'
 import { getFacingZonePolygons, getFootprintGeometry, getRotateHandlePositions } from '../../game/placementPreview'
 
 export function BattlefieldBoard({
@@ -14,6 +15,8 @@ export function BattlefieldBoard({
   interactiveZone = null,
   previewPlacement = null,
   tacticalOverlay = null,
+  showFacingZones = true,
+  showCornerMarkers = true,
 }) {
   const width = snapshot?.width ?? battlefieldConfig.width
   const height = snapshot?.height ?? battlefieldConfig.height
@@ -30,7 +33,7 @@ export function BattlefieldBoard({
   const selectedUnit = previewPlacement?.entityId === selectedUnitId
     ? previewPlacement
     : units.find((unit) => unit.entityId === selectedUnitId) ?? null
-  const selectedZones = selectedUnit ? getFacingZonePolygons(selectedUnit) : null
+  const selectedZones = showFacingZones && selectedUnit ? getFacingZonePolygons(selectedUnit) : null
   const previewGeometry = previewPlacement ? getFootprintGeometry(previewPlacement) : null
   const previewHandles = previewPlacement ? getRotateHandlePositions(previewPlacement) : null
 
@@ -147,10 +150,15 @@ export function BattlefieldBoard({
               <span className="battlefield-unit__face battlefield-unit__face--rear" />
               <span className="battlefield-unit__face battlefield-unit__face--left" />
               <span className="battlefield-unit__face battlefield-unit__face--right" />
-              <span className="battlefield-unit__corner battlefield-unit__corner--front-left" />
-              <span className="battlefield-unit__corner battlefield-unit__corner--front-right" />
-              <span className="battlefield-unit__corner battlefield-unit__corner--rear-right" />
-              <span className="battlefield-unit__corner battlefield-unit__corner--rear-left" />
+              {showCornerMarkers && (
+                <>
+                  <span className="battlefield-unit__corner battlefield-unit__corner--front-left" />
+                  <span className="battlefield-unit__corner battlefield-unit__corner--front-right" />
+                  <span className="battlefield-unit__corner battlefield-unit__corner--rear-right" />
+                  <span className="battlefield-unit__corner battlefield-unit__corner--rear-left" />
+                </>
+              )}
+              <BattlefieldUnitModels unit={previewPlacement} />
               <span className="battlefield-unit__arrow" />
             </span>
             <span className="battlefield-unit__label">
@@ -214,10 +222,15 @@ export function BattlefieldBoard({
                   <span className="battlefield-unit__face battlefield-unit__face--rear" />
                   <span className="battlefield-unit__face battlefield-unit__face--left" />
                   <span className="battlefield-unit__face battlefield-unit__face--right" />
-                  <span className="battlefield-unit__corner battlefield-unit__corner--front-left" />
-                  <span className="battlefield-unit__corner battlefield-unit__corner--front-right" />
-                  <span className="battlefield-unit__corner battlefield-unit__corner--rear-right" />
-                  <span className="battlefield-unit__corner battlefield-unit__corner--rear-left" />
+                  {showCornerMarkers && (
+                    <>
+                      <span className="battlefield-unit__corner battlefield-unit__corner--front-left" />
+                      <span className="battlefield-unit__corner battlefield-unit__corner--front-right" />
+                      <span className="battlefield-unit__corner battlefield-unit__corner--rear-right" />
+                      <span className="battlefield-unit__corner battlefield-unit__corner--rear-left" />
+                    </>
+                  )}
+                  <BattlefieldUnitModels unit={unit} />
                   <span className="battlefield-unit__arrow" />
                 </span>
                 <span className="battlefield-unit__label">
@@ -254,5 +267,36 @@ export function BattlefieldBoard({
         })}
       </div>
     </div>
+  )
+}
+
+function BattlefieldUnitModels({ unit }) {
+  const formationLayout = buildFormationLayout({
+    modelsRemaining: unit.modelsRemaining ?? 0,
+    frontage: unit.frontage ?? unit.files ?? 1,
+    maxFiles: unit.maxFiles ?? unit.files ?? 1,
+    modelWidth: unit.modelWidth ?? 1,
+    modelDepth: unit.modelDepth ?? 1,
+  })
+
+  if (formationLayout.slots.length === 0 || formationLayout.gridWidth === 0 || formationLayout.gridDepth === 0) {
+    return null
+  }
+
+  return (
+    <span className="battlefield-unit__models" aria-hidden="true">
+      {formationLayout.slots.map((slot) => (
+        <span
+          key={slot.id}
+          className={`battlefield-unit__model battlefield-unit__model--${unit.modelClass ?? 'infantry'}`}
+          style={{
+            left: `${(slot.x / formationLayout.gridWidth) * 100}%`,
+            top: `${(slot.y / formationLayout.gridDepth) * 100}%`,
+            width: `${(slot.width / formationLayout.gridWidth) * 100}%`,
+            height: `${(slot.depth / formationLayout.gridDepth) * 100}%`,
+          }}
+        />
+      ))}
+    </span>
   )
 }

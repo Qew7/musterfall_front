@@ -36,7 +36,13 @@ export function BattleReplayCard({ battle, roundNumber }) {
         </span>
       </div>
 
-      <BattlefieldBoard snapshot={{ units: frame.units }} selectedUnitId={frame.overlay?.activeUnitId ?? null} tacticalOverlay={frame.overlay ?? null} />
+      <BattlefieldBoard
+        snapshot={{ units: frame.units }}
+        selectedUnitId={frame.overlay?.activeUnitId ?? null}
+        tacticalOverlay={frame.overlay ?? null}
+        showFacingZones={false}
+        showCornerMarkers={false}
+      />
 
       <div className="battle-replay-card__summary">
         <strong>{frame.phaseType ?? 'replay'}</strong>
