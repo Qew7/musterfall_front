@@ -1,5 +1,5 @@
 import { playBattleTurn } from './BattleTurn'
-import { applyFactionPassives, hasLivingCombatants } from './support'
+import { applyFactionPassives, areAllLivingCombatantsRouting, hasLivingCombatants } from './support'
 
 export function playBattleRound({ battle, roundNumber }) {
   const round = {
@@ -15,6 +15,10 @@ export function playBattleRound({ battle, roundNumber }) {
 
   turnPairs.forEach(({ actingSide, targetSide }) => {
     if (!hasLivingCombatants(actingSide) || !hasLivingCombatants(targetSide)) {
+      return
+    }
+
+    if (areAllLivingCombatantsRouting([actingSide, targetSide])) {
       return
     }
 

@@ -31,6 +31,7 @@ export function createUnitEntity(catalog, templateId, ownerId) {
         spellTemplate: template.spellTemplate,
         requiresLineOfSight: template.requiresLineOfSight,
         initiative: template.initiative,
+        attacks: template.attacks,
       },
       formation: {
         models: template.models,
@@ -90,6 +91,7 @@ export function createHeroEntity(catalog, templateId, ownerId, free = false) {
         spellTemplate: template.spellTemplate,
         requiresLineOfSight: template.requiresLineOfSight,
         initiative: template.initiative,
+        attacks: template.attacks,
       },
       formation: {
         models: template.models,

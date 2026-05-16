@@ -22,6 +22,14 @@ export function hasLivingCombatants(side) {
   return side.combatants.some((entry) => entry.currentHealth > 0)
 }
 
+export function areAllLivingCombatantsRouting(sides) {
+  const living = sides
+    .flatMap((side) => side.combatants)
+    .filter((entry) => entry.currentHealth > 0)
+
+  return living.length > 0 && living.every((entry) => entry.isRouting)
+}
+
 export function applyFactionPassives(side) {
   const events = []
 
@@ -338,6 +346,7 @@ function buildCombatant(entity, attachedHeroes, sideKey, sideIndex) {
       melee: meleeContributors,
       ranged: rangedContributors,
     },
+    attacks: entity.components.combat.attacks,
   })
 }
 

@@ -159,7 +159,13 @@ function findNearestEnemy(combatant, enemies) {
     return null
   }
 
-  return [...living].sort((left, right) => getDistanceBetweenUnits(combatant, left) - getDistanceBetweenUnits(combatant, right))[0]
+  return [...living].sort((left, right) => {
+    if (left.isRouting !== right.isRouting) {
+      return Number(left.isRouting) - Number(right.isRouting)
+    }
+
+    return getDistanceBetweenUnits(combatant, left) - getDistanceBetweenUnits(combatant, right)
+  })[0]
 }
 
 function buildMovementDetails({ actorName, actorStateBefore, actorStateAfter, from, to }) {

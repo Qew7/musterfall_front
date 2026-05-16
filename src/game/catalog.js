@@ -77,6 +77,7 @@ function normalizeTemplate(entry) {
     initiative: expectNumber(entry.initiative, 'templates[].initiative'),
     abilities: expectArray(entry.abilities, 'templates[].abilities').map((value) => expectString(value, 'templates[].abilities[]')),
     mounted: Boolean(entry.mounted),
+    attacks: expectNumber(entry.attacks, 'templates[].attacks'),
   }
 }
 

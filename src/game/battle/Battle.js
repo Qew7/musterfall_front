@@ -1,6 +1,7 @@
 import { playBattleRound } from './BattleRound'
 import { projectBattleReplay } from './replayProjection'
 import {
+  areAllLivingCombatantsRouting,
   createBattleState,
   getSideHealth,
   hasLivingCombatants,
@@ -17,6 +18,10 @@ export function simulateBattle(playerA, playerB, catalog) {
 
   for (let roundNumber = 1; roundNumber <= maxBattleRounds; roundNumber += 1) {
     if (!hasLivingCombatants(battle.sides.left) || !hasLivingCombatants(battle.sides.right)) {
+      break
+    }
+
+    if (areAllLivingCombatantsRouting([battle.sides.left, battle.sides.right])) {
       break
     }
 

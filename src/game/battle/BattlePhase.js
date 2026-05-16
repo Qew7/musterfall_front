@@ -37,7 +37,7 @@ export function resolveAttackPhase({ phase, actingSide, targetSide, roundNumber,
   const allCombatants = [...actingSide.combatants, ...targetSide.combatants]
   const attackers = actingSide.combatants
     .filter((entry) => entry.currentHealth > 0)
-    .filter((entry) => canAttack(entry, attackType))
+    .filter((entry) => canAttack(entry, attackType, { allowRoutingMelee: phase.allowRoutingMelee === true }))
     .sort((left, right) => right.initiative - left.initiative)
 
   if (attackers.length === 0) {
@@ -70,58 +70,62 @@ export function resolveAttackPhase({ phase, actingSide, targetSide, roundNumber,
         return
       }
 
-      const attackerForSkillCheck = attackType === 'melee' ? entry.profile : attacker
-      if (!didHit(attackerForSkillCheck, target, attackType)) {
-        addPhaseEvent(phase, `${formatBattleActor(entry.actorRole, entry.actorName)} промахивается по ${target.name}`)
-        return
+      // Количество атак (по умолчанию 1)
+      const attacks = (entry.profile && entry.profile.attacks) || attacker.attacks || 1
+      for (let i = 0; i < attacks; i++) {
+        const attackerForSkillCheck = attackType === 'melee' ? entry.profile : attacker
+        if (!didHit(attackerForSkillCheck, target, attackType)) {
+          addPhaseEvent(phase, `${formatBattleActor(entry.actorRole, entry.actorName)} промахивается по ${target.name}`)
+          continue
+        }
+
+        const actorState = snapshotCombatantState(attacker)
+        const targetStateBefore = snapshotCombatantState(target)
+
+        target.currentHealth = Math.max(0, target.currentHealth - entry.damage)
+        syncCombatantFootprint(target)
+
+        const targetStateAfter = snapshotCombatantState(target)
+
+        if (attackType === 'melee') {
+          distributeContributorExperience(entry.profile, entry.damage)
+        } else {
+          distributeExperience(attacker, attackType, entry.damage)
+        }
+
+        addPhaseEvent(phase, `${formatBattleActor(entry.actorRole, entry.actorName)} наносит ${entry.damage} урона по ${target.name} (${vector})`)
+        const action = {
+          type: attackType,
+          actorId: entry.actorId,
+          actorUnitId: entry.actorUnitId,
+          actorName: entry.actorName,
+          actorRole: entry.actorRole,
+          targetId: target.entityId,
+          targetName: target.name,
+          vector,
+          damage: entry.damage,
+          blockers: blockers.map((blocker) => blocker.entityId),
+          requiresLineOfSight: attacker.requiresLineOfSight,
+          template: attackType === 'melee' ? null : getAttackTemplateDescriptor(attacker, target, victims, attackType),
+          affectedIds: victims.map((victim) => victim.target.entityId),
+          actorState,
+          targetStateBefore,
+          targetStateAfter,
+          charge: attackType === 'melee' && getDistanceBetweenUnits(attacker, target) > contactTolerance
+            ? {
+                start: { x: attacker.x, y: attacker.y, facing: attacker.facing },
+                destination: getChargeDestination(attacker, target, getHeadingTo(attacker, target)),
+                contactPoint: getClosestPointOnUnit(attacker, target),
+                vector,
+              }
+            : null,
+          snapshot: snapshotBattlefieldState([actingSide, targetSide]),
+        }
+
+        action.summary = summarizeAttackAction(action, phase.type)
+        action.details = buildAttackActionDetails(action)
+        phase.actions.push(action)
       }
-
-      const actorState = snapshotCombatantState(attacker)
-      const targetStateBefore = snapshotCombatantState(target)
-
-      target.currentHealth = Math.max(0, target.currentHealth - entry.damage)
-      syncCombatantFootprint(target)
-
-      const targetStateAfter = snapshotCombatantState(target)
-
-      if (attackType === 'melee') {
-        distributeContributorExperience(entry.profile, entry.damage)
-      } else {
-        distributeExperience(attacker, attackType, entry.damage)
-      }
-
-      addPhaseEvent(phase, `${formatBattleActor(entry.actorRole, entry.actorName)} наносит ${entry.damage} урона по ${target.name} (${vector})`)
-      const action = {
-        type: attackType,
-        actorId: entry.actorId,
-        actorUnitId: entry.actorUnitId,
-        actorName: entry.actorName,
-        actorRole: entry.actorRole,
-        targetId: target.entityId,
-        targetName: target.name,
-        vector,
-        damage: entry.damage,
-        blockers: blockers.map((blocker) => blocker.entityId),
-        requiresLineOfSight: attacker.requiresLineOfSight,
-        template: attackType === 'melee' ? null : getAttackTemplateDescriptor(attacker, target, victims, attackType),
-        affectedIds: victims.map((victim) => victim.target.entityId),
-        actorState,
-        targetStateBefore,
-        targetStateAfter,
-        charge: attackType === 'melee' && getDistanceBetweenUnits(attacker, target) > contactTolerance
-          ? {
-              start: { x: attacker.x, y: attacker.y, facing: attacker.facing },
-              destination: getChargeDestination(attacker, target, getHeadingTo(attacker, target)),
-              contactPoint: getClosestPointOnUnit(attacker, target),
-              vector,
-            }
-          : null,
-        snapshot: snapshotBattlefieldState([actingSide, targetSide]),
-      }
-
-      action.summary = summarizeAttackAction(action, phase.type)
-      action.details = buildAttackActionDetails(action)
-      phase.actions.push(action)
     })
   })
 
@@ -216,8 +220,8 @@ function describeVector(vector) {
   return 'фронт'
 }
 
-function canAttack(attacker, attackType) {
-  if (attacker.isRouting) {
+function canAttack(attacker, attackType, { allowRoutingMelee = false } = {}) {
+  if (attacker.isRouting && !(allowRoutingMelee && attackType === 'melee')) {
     return false
   }
 
@@ -266,7 +270,9 @@ function chooseTarget(attacker, enemies, attackType, allCombatants = enemies) {
     return null
   }
 
-  const sameLane = battleRows.flatMap((row) => availableTargets.filter((entry) => entry.lane === attacker.lane && entry.row === row))
+  const prioritizedTargets = prioritizeRoutingTargets(availableTargets)
+
+  const sameLane = battleRows.flatMap((row) => prioritizedTargets.filter((entry) => entry.lane === attacker.lane && entry.row === row))
   if (sameLane.length > 0) {
     const target = sameLane[0]
     return {
@@ -277,7 +283,7 @@ function chooseTarget(attacker, enemies, attackType, allCombatants = enemies) {
 
   const adjacent = laneOrder
     .filter((lane) => lane !== attacker.lane)
-    .flatMap((lane) => battleRows.flatMap((row) => availableTargets.filter((entry) => entry.lane === lane && entry.row === row)))
+    .flatMap((lane) => battleRows.flatMap((row) => prioritizedTargets.filter((entry) => entry.lane === lane && entry.row === row)))
 
   if (adjacent.length > 0) {
     return {
@@ -286,7 +292,7 @@ function chooseTarget(attacker, enemies, attackType, allCombatants = enemies) {
     }
   }
 
-  return { target: availableTargets[0], vector: 'front' }
+  return { target: prioritizedTargets[0], vector: 'front' }
 }
 
 function canTargetWithRangedAttack(attacker, target, allCombatants) {
@@ -319,6 +325,16 @@ function getVectorPriority(vector) {
   }
 
   return 2
+}
+
+function prioritizeRoutingTargets(targets) {
+  return [...targets].sort((left, right) => {
+    if (left.isRouting !== right.isRouting) {
+      return Number(left.isRouting) - Number(right.isRouting)
+    }
+
+    return 0
+  })
 }
 
 function calculateDamage(attacker, defender, attackType, vector, roundNumber) {
@@ -479,11 +495,11 @@ function calculateHitChance(attacker, defender, attackType) {
     const defenderSkill = defender.skill ?? 3
 
     if (attackerSkill > defenderSkill) {
-      return 3 / 6
+      return 5 / 6
     }
 
     if (attackerSkill < defenderSkill) {
-      return 5 / 6
+      return 3 / 6
     }
 
     return 4 / 6

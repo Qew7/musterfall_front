@@ -1,7 +1,6 @@
 import { createBattlePhase, addPhaseEvent } from './BattlePhase'
 import {
   battlefieldConfig,
-  clampBattlefieldPosition,
   getDistanceBetween,
   getDistanceBetweenUnits,
   getHeadingTo,
@@ -151,6 +150,7 @@ function resolveMoraleAction({ combatant, allies, enemies, roundNumber, phaseTyp
   let damage = 0
   let to = null
   let retreatEdge = null
+  let escaped = false
   let actorStateAfter
   let summary
 
@@ -182,11 +182,20 @@ function resolveMoraleAction({ combatant, allies, enemies, roundNumber, phaseTyp
     combatant.x = retreat.destination.x
     combatant.y = retreat.destination.y
     retreatEdge = retreat.edge
+    escaped = retreat.escaped
+
+    if (escaped) {
+      combatant.currentHealth = 0
+      combatant.isRouting = false
+    }
+
     syncCombatantFootprint(combatant)
     to = snapshotPosition(combatant)
-    summary = phaseType === 'start'
-      ? `${combatant.name} не может восстановить строй и продолжает бегство.`
-      : `${combatant.name} ломает строй и обращается в бегство.`
+    summary = escaped
+      ? `${combatant.name} в панике покидает поле боя и считается уничтоженным.`
+      : phaseType === 'start'
+        ? `${combatant.name} не может восстановить строй и продолжает бегство.`
+        : `${combatant.name} ломает строй и обращается в бегство.`
   }
 
   actorStateAfter = snapshotCombatantState(combatant)
@@ -203,7 +212,7 @@ function resolveMoraleAction({ combatant, allies, enemies, roundNumber, phaseTyp
     actorStateBefore,
     actorStateAfter,
     summary,
-    details: buildMoraleDetails({ moraleCheck, combatScoreDelta, damage, phaseType, combatant, retreatEdge }),
+    details: buildMoraleDetails({ moraleCheck, combatScoreDelta, damage, phaseType, combatant, retreatEdge, escaped }),
     moraleCheck: buildMoraleLog({
       moraleCheck,
       trigger,
@@ -212,6 +221,7 @@ function resolveMoraleAction({ combatant, allies, enemies, roundNumber, phaseTyp
       combatScoreDelta,
       damage,
       retreatEdge,
+      escaped,
       statusBefore: actorStateBefore.isRouting,
       statusAfter: actorStateAfter.isRouting,
     }),
@@ -219,18 +229,19 @@ function resolveMoraleAction({ combatant, allies, enemies, roundNumber, phaseTyp
   }
 }
 
-function buildMoraleDetails({ moraleCheck, combatScoreDelta, damage, phaseType, combatant, retreatEdge }) {
+function buildMoraleDetails({ moraleCheck, combatScoreDelta, damage, phaseType, combatant, retreatEdge, escaped }) {
   return [
     `Бросок морали: ${moraleCheck.roll} против порога ${moraleCheck.threshold}.`,
     `Использована мораль: ${moraleCheck.effectiveMorale} (${moraleCheck.source}).`,
     `Штраф за очки боя: ${combatScoreDelta}.`,
     `Фаза: ${phaseType}, отряд: ${combatant.name}.`,
     retreatEdge ? `Отступление к краю поля: ${retreatEdge}.` : 'Отступление не потребовалось.',
+    escaped ? 'Отряд покинул поле боя и удалён из сражения.' : 'Отряд остаётся в пределах поля боя.',
     damage > 0 ? `Потеря здоровья из-за провала: ${damage}.` : `Запас провала: ${moraleCheck.failureMargin}.`,
   ]
 }
 
-function buildMoraleLog({ moraleCheck, trigger, combatant, phaseType, combatScoreDelta, damage, retreatEdge, statusBefore, statusAfter }) {
+function buildMoraleLog({ moraleCheck, trigger, combatant, phaseType, combatScoreDelta, damage, retreatEdge, escaped, statusBefore, statusAfter }) {
   return {
     sourcePhase: phaseType,
     trigger: trigger?.reason ?? (phaseType === 'melee' ? 'combat_score' : phaseType === 'start' ? 'rally' : 'phase_casualties'),
@@ -250,6 +261,7 @@ function buildMoraleLog({ moraleCheck, trigger, combatant, phaseType, combatScor
     statusAfter,
     damageApplied: damage,
     retreatEdge,
+    escaped,
   }
 }
 
@@ -416,12 +428,20 @@ function getHeadingAwayFromEnemies(combatant, enemies) {
 function retreatTowardNearestEdge(combatant, distance) {
   const edge = findNearestEdge(combatant)
   const heading = getHeadingTo(combatant, edge.point)
-  const destination = clampBattlefieldPosition(moveAlongFacing({ ...combatant, facing: heading }, distance))
+  const destination = moveAlongFacing({ ...combatant, facing: heading }, distance)
 
   return {
     edge: edge.label,
     destination,
+    escaped: isOutsideBattlefield(destination),
   }
+}
+
+function isOutsideBattlefield(position) {
+  return position.x < 0
+    || position.y < 0
+    || position.x > battlefieldConfig.width - 1
+    || position.y > battlefieldConfig.height - 1
 }
 
 function findNearestEdge(combatant) {
@@ -438,7 +458,13 @@ function findNearestEdge(combatant) {
 function findNearestEnemy(combatant, enemies) {
   return enemies
     .filter((enemy) => enemy.currentHealth > 0)
-    .sort((left, right) => getDistanceBetween(combatant, left) - getDistanceBetween(combatant, right))[0] ?? null
+    .sort((left, right) => {
+      if (left.isRouting !== right.isRouting) {
+        return Number(left.isRouting) - Number(right.isRouting)
+      }
+
+      return getDistanceBetween(combatant, left) - getDistanceBetween(combatant, right)
+    })[0] ?? null
 }
 
 function collectPhaseCasualtyTriggers(actions, attackType, combatants) {
