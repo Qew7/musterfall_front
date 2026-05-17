@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { BattlefieldBoard } from '../battlefield/BattlefieldBoard'
-import { battlefieldConfig, getFacingLabel, getHeadingTo, rotateFacing } from '../../game/battlefield'
-import { autoDeployPlayer, rotateEntityOnBattlefield, setEntityBattlefieldTransform, toggleEntityReserve } from '../../game/engine'
+import { battlefieldConfig, getHeadingTo, rotateFacing } from '../../game/battlefield'
+import { autoDeployPlayer, setEntityBattlefieldTransform } from '../../game/engine'
 import { healthToModels } from '../../game/entities'
 import { getPlacementDiagnostics, getPreviewOverlay, getWheelSweepDiagnostics } from '../../game/placementPreview'
 
@@ -172,8 +172,6 @@ export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
       <div className="formation-board__header">
         <div>
           <h2>Поле расстановки</h2>
-          <p>Выбирайте отряд, кликайте по клетке своей зоны и задавайте facing. Во время боя противник появится напротив на том же поле.</p>
-          <p>Можно перетаскивать отряд: направление drag задаёт его facing, а preview сразу показывает реальный footprint, wheel и illegal placement.</p>
         </div>
         <button type="button" className="ghost-button" onClick={() => setCampaign(autoDeployPlayer(campaign, selectedPlayer.id))}>
           Авторасстановка
@@ -278,79 +276,6 @@ export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
         previewPlacement={previewPlacement}
       />
 
-      {dragState && previewPlacement && (
-        <div className="formation-board__preview-bar">
-          <div className={`formation-board__preview-status ${previewPlacement.isLegal ? 'formation-board__preview-status--legal' : 'formation-board__preview-status--illegal'}`}>
-            <strong>{previewPlacement.isLegal ? 'Preview ready' : 'Placement blocked'}</strong>
-            <span>
-              {previewPlacement.name}: {previewPlacement.x}, {previewPlacement.y} · {getFacingLabel(previewPlacement.facing)}
-            </span>
-          </div>
-
-          {previewPlacement.reasons.length > 0 && (
-            <div className="formation-board__preview-reasons">
-              {previewPlacement.reasons.map((reason) => (
-                <span key={reason}>{reason}</span>
-              ))}
-            </div>
-          )}
-
-          <div className="entity-card__actions">
-            <button
-              type="button"
-              className="ghost-button"
-              onClick={() => commitPreviewPlacement(dragState)}
-              disabled={!previewPlacement.isLegal}
-            >
-              Commit preview
-            </button>
-            <button type="button" className="ghost-button" onClick={() => setDragState(null)}>
-              Cancel preview
-            </button>
-          </div>
-        </div>
-      )}
-
-      <div className="formation-board__controls">
-        {movableEntities.map((entity) => (
-          <button
-            key={entity.id}
-            type="button"
-            className={`player-tab ${entity.id === selectedEntity?.id ? 'player-tab--active' : ''}`}
-            onClick={() => setSelectedEntityId(entity.id)}
-          >
-            <strong>{entity.name}</strong>
-            <span>{entity.components.formation.row === 'reserve' ? 'Резерв' : `Facing: ${getFacingLabel(entity.components.formation.facing)}`}</span>
-            <small>{entity.kind === 'unit' ? `${healthToModels(entity)} моделей` : `${entity.state.currentHealth} HP`}</small>
-          </button>
-        ))}
-      </div>
-
-      {selectedEntity && (
-        <div className="entity-card__actions">
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => setCampaign(rotateEntityOnBattlefield(campaign, selectedPlayer.id, selectedEntity.id, 'left'))}
-          >
-            Повернуть влево
-          </button>
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => setCampaign(rotateEntityOnBattlefield(campaign, selectedPlayer.id, selectedEntity.id, 'right'))}
-          >
-            Повернуть вправо
-          </button>
-          <button
-            type="button"
-            className="ghost-button"
-            onClick={() => setCampaign(toggleEntityReserve(campaign, selectedPlayer.id, selectedEntity.id))}
-          >
-            {selectedEntity.components.formation.row === 'reserve' ? 'Выставить на поле' : 'Убрать в резерв'}
-          </button>
-        </div>
-      )}
     </section>
   )
 }

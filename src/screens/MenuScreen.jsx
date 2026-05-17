@@ -1,13 +1,10 @@
 export function MenuScreen({ playerCount, setPlayerCount, startCampaign, metaProgress, championFactionName, catalogReady }) {
   return (
-    <section className="screen-grid screen-grid--menu">
+    <section className="screen-grid screen-grid--menu screen-grid--locked">
       <article className="hero-panel hero-panel--campaign">
         <div>
           <p className="eyebrow">Метакампания</p>
-          <p className="lead">
-            Кампания на 4-8 игроков: выбор армии, добор и расстановка, автобой с фронтом, тылом и флангами, герои с опытом,
-            заклинаниями и draft-апгрейдами 1 из 3.
-          </p>
+          <p className="lead">Короткая сессия: выбор фракций, подготовка строя, автобой, переход к новому раунду.</p>
         </div>
 
         <div className="dial-row">
@@ -42,20 +39,20 @@ export function MenuScreen({ playerCount, setPlayerCount, startCampaign, metaPro
 
       <article className="details-panel details-panel--spec">
         <div>
-          <h2>Боевая математика</h2>
+          <h2>Как проходит раунд</h2>
           <ul>
-            <li>Матрица оружия и брони учитывает heavy, medium, light, machine и magic armor.</li>
-            <li>Прямоугольные формации живут как сущности с компонентами combat, health, formation и abilities.</li>
-            <li>Фронт, фланг и тыл меняют множитель урона, а скирмишеры игнорируют штрафы facing.</li>
+            <li>Фракции выбираются по игрокам через табы.</li>
+            <li>Подготовка делится на найм и расстановку.</li>
+            <li>Бой можно смотреть по табам: свой и остальные.</li>
           </ul>
         </div>
 
         <div>
-          <h2>Герои и кампания</h2>
+          <h2>Метапрогресс</h2>
           <ul>
-            <li>Пешие герои могут входить в отряды, верховые всегда остаются отдельными моделями.</li>
-            <li>За каждый снятый героем HP он получает 1 XP и при пороге 3 + уровень открывает draft 1 из 3.</li>
-            <li>Последний выживший игрок берет мета XP, essence и crown сезона.</li>
+            <li>Победитель раунда получает преимущества кампании.</li>
+            <li>Герои развиваются через draft улучшений.</li>
+            <li>Сезон накапливает XP, essence и crowns.</li>
           </ul>
         </div>
       </article>

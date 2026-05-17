@@ -1,6 +1,6 @@
 import { battlefieldConfig } from '../../game/battlefield'
 import { buildFormationLayout } from '../../game/formation'
-import { getFacingZonePolygons, getFootprintGeometry, getRotateHandlePositions } from '../../game/placementPreview'
+import { getFacingZonePolygons, getFootprintGeometry } from '../../game/placementPreview'
 
 export function BattlefieldBoard({
   snapshot,
@@ -35,7 +35,6 @@ export function BattlefieldBoard({
     : units.find((unit) => unit.entityId === selectedUnitId) ?? null
   const selectedZones = showFacingZones && selectedUnit ? getFacingZonePolygons(selectedUnit) : null
   const previewGeometry = previewPlacement ? getFootprintGeometry(previewPlacement) : null
-  const previewHandles = previewPlacement ? getRotateHandlePositions(previewPlacement) : null
 
   return (
     <div className="battlefield-board" style={{ '--board-columns': width, '--board-rows': height }}>
@@ -166,29 +165,6 @@ export function BattlefieldBoard({
               <small>{previewPlacement.isLegal ? 'preview ready' : 'illegal placement'}</small>
             </span>
           </div>
-        )}
-
-        {previewPlacement && previewHandles && onRotatePreview && (
-          <>
-            <button
-              type="button"
-              className="battlefield-board__handle battlefield-board__handle--left"
-              style={{ left: `${(previewHandles.left.x / width) * 100}%`, top: `${(previewHandles.left.y / height) * 100}%` }}
-              onClick={() => onRotatePreview('left')}
-              aria-label="Повернуть preview влево"
-            >
-              ↺
-            </button>
-            <button
-              type="button"
-              className="battlefield-board__handle battlefield-board__handle--right"
-              style={{ left: `${(previewHandles.right.x / width) * 100}%`, top: `${(previewHandles.right.y / height) * 100}%` }}
-              onClick={() => onRotatePreview('right')}
-              aria-label="Повернуть preview вправо"
-            >
-              ↻
-            </button>
-          </>
         )}
 
         {units.map((unit) => {

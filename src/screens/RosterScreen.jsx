@@ -1,43 +1,45 @@
+import { useMemo, useState } from 'react'
 import { RecruitmentPanel } from '../components/roster/RecruitmentPanel'
 import { RosterEntitiesPanel } from '../components/roster/RosterEntitiesPanel'
 import { FormationBoard } from '../components/roster/FormationBoard'
+import { TabBar } from '../components/TabBar'
 import { getPlayerSummary } from '../game/selectors'
 
 export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer, onSelectPlayer, setCampaign, onNextPreparation, onBeginRound, isBusy }) {
   const hasMultiplePlayers = activePlayers.length > 1
+  const playerTabs = useMemo(
+    () => activePlayers.map((player) => {
+      const summary = getPlayerSummary(player)
+
+      return {
+        id: player.id,
+        label: player.name,
+        meta: `${summary.ready} в строю`,
+      }
+    }),
+    [activePlayers],
+  )
+  const prepTabs = [
+    { id: 'roster', label: 'Найм и строй', meta: 'юниты и герои' },
+    { id: 'formation', label: 'Расстановка', meta: 'позиции на поле' },
+  ]
+  const [activePrepTab, setActivePrepTab] = useState('roster')
 
   return (
-    <section className="screen-grid">
-      <article className="hero-panel hero-panel--compact">
-        <p className="eyebrow">Шаг 2</p>
-        <h2>Набор, герои и расстановка</h2>
-        <p className="lead">Игроки тратят припасы между боями, перестраивают фронт, тыл и фланги и распределяют героев по отрядам.</p>
-      </article>
+    <section className="screen-grid screen-grid--locked">
+      <TabBar tabs={playerTabs} activeId={selectedPlayer.id} onChange={onSelectPlayer} ariaLabel="Игроки" />
+      <TabBar tabs={prepTabs} activeId={activePrepTab} onChange={setActivePrepTab} ariaLabel="Подготовка" className="tab-bar--compact" />
 
-      <div className="player-tabs">
-        {activePlayers.map((player) => {
-          const summary = getPlayerSummary(player)
-          return (
-            <button
-              key={player.id}
-              type="button"
-              className={`player-tab ${player.id === selectedPlayer.id ? 'player-tab--active' : ''}`}
-              onClick={() => onSelectPlayer(player.id)}
-            >
-              <strong>{player.name}</strong>
-              <span>{catalog.factions.find((entry) => entry.id === player.factionId)?.name}</span>
-              <small>{summary.ready} в строю</small>
-            </button>
-          )
-        })}
-      </div>
+      <section className="screen-body">
+        {activePrepTab === 'roster' && (
+          <section className="roster-layout">
+            <RecruitmentPanel campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
+            <RosterEntitiesPanel campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
+          </section>
+        )}
 
-      <section className="roster-layout">
-        <RecruitmentPanel campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
-        <RosterEntitiesPanel campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
+        {activePrepTab === 'formation' && <FormationBoard campaign={campaign} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />}
       </section>
-
-      <FormationBoard campaign={campaign} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
 
       <div className="menu-actions">
         <button type="button" className="ghost-button" onClick={onNextPreparation} disabled={!hasMultiplePlayers}>
