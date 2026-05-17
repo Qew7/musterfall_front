@@ -38,7 +38,9 @@ export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer,
           </section>
         )}
 
-        {activePrepTab === 'formation' && <FormationBoard campaign={campaign} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />}
+        {activePrepTab === 'formation' && (
+          <FormationBoard campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
+        )}
       </section>
 
       <div className="menu-actions">

@@ -17,6 +17,9 @@ export function BattlefieldBoard({
   tacticalOverlay = null,
   showFacingZones = true,
   showCornerMarkers = true,
+  phaseType = null,
+  overlayAnimKey = null,
+  instantUnits = false,
 }) {
   const width = snapshot?.width ?? battlefieldConfig.width
   const height = snapshot?.height ?? battlefieldConfig.height
@@ -95,6 +98,69 @@ export function BattlefieldBoard({
               x2={tacticalOverlay.los.end.x + 0.5}
               y2={tacticalOverlay.los.end.y + 0.5}
             />
+          )}
+
+          {/* Анимированный снаряд для дальнобойных атак */}
+          {phaseType === 'shooting' && tacticalOverlay?.los && !tacticalOverlay.los.blocked && (
+            <circle
+              key={`projectile-${overlayAnimKey}`}
+              className="battlefield-board__projectile"
+              r="0.22"
+            >
+              <animateMotion
+                dur="0.45s"
+                fill="freeze"
+                path={`M ${tacticalOverlay.los.start.x + 0.5},${tacticalOverlay.los.start.y + 0.5} L ${tacticalOverlay.los.end.x + 0.5},${tacticalOverlay.los.end.y + 0.5}`}
+              />
+            </circle>
+          )}
+
+          {/* Анимированный снаряд для магических атак */}
+          {phaseType === 'magic' && tacticalOverlay?.los && (
+            <circle
+              key={`magic-missile-${overlayAnimKey}`}
+              className="battlefield-board__magic-missile"
+              r="0.28"
+            >
+              <animateMotion
+                dur="0.38s"
+                fill="freeze"
+                path={`M ${tacticalOverlay.los.start.x + 0.5},${tacticalOverlay.los.start.y + 0.5} L ${tacticalOverlay.los.end.x + 0.5},${tacticalOverlay.los.end.y + 0.5}`}
+              />
+            </circle>
+          )}
+
+          {/* Пульс при попадании магии по области */}
+          {phaseType === 'magic' && tacticalOverlay?.template?.shape === 'circle' && (
+            <circle
+              key={`magic-pulse-${overlayAnimKey}`}
+              className="battlefield-board__magic-missile"
+              cx={tacticalOverlay.template.center.x + 0.5}
+              cy={tacticalOverlay.template.center.y + 0.5}
+              r="0"
+              opacity="0.7"
+              fill="none"
+              stroke="rgba(80, 130, 255, 0.7)"
+              strokeWidth="0.1"
+            >
+              <animate attributeName="r" from="0" to={tacticalOverlay.template.radius} dur="0.55s" begin="0.35s" fill="freeze" />
+              <animate attributeName="opacity" from="0.7" to="0" dur="0.55s" begin="0.35s" fill="freeze" />
+            </circle>
+          )}
+
+          {/* Вспышка удара для ближнего боя */}
+          {phaseType === 'melee' && tacticalOverlay?.los && (
+            <line
+              key={`melee-flash-${overlayAnimKey}`}
+              className="battlefield-board__melee-flash"
+              x1={tacticalOverlay.los.start.x + 0.5}
+              y1={tacticalOverlay.los.start.y + 0.5}
+              x2={tacticalOverlay.los.end.x + 0.5}
+              y2={tacticalOverlay.los.end.y + 0.5}
+            >
+              <animate attributeName="opacity" from="0.9" to="0" dur="0.45s" fill="freeze" />
+              <animate attributeName="stroke-width" from="0.14" to="0.03" dur="0.45s" fill="freeze" />
+            </line>
           )}
 
           {tacticalOverlay?.template?.shape === 'circle' && (
@@ -184,7 +250,7 @@ export function BattlefieldBoard({
           return (
             <div
               key={unit.entityId}
-              className="battlefield-unit-shell"
+              className={`battlefield-unit-shell${instantUnits ? ' battlefield-unit-shell--instant' : ''}`}
               style={{ left: leftPercent, top: topPercent, width: widthPercent, height: heightPercent, '--facing': `${unit.facing}deg` }}
             >
               <button
@@ -276,6 +342,7 @@ function BattlefieldUnitModels({ unit }) {
           className={`battlefield-unit__model battlefield-unit__model--${unit.modelClass ?? 'infantry'} ${heroSlotMap.has(slot.id) ? 'battlefield-unit__model--hero' : ''}`}
           title={heroSlotMap.get(slot.id)?.name ?? undefined}
           style={{
+            '--model-color': unit.factionColor,
             left: `${(slot.x / formationLayout.gridWidth) * 100}%`,
             top: `${(slot.y / formationLayout.gridDepth) * 100}%`,
             width: `${(slot.width / formationLayout.gridWidth) * 100}%`,

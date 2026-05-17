@@ -100,6 +100,7 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
                   key={slot.id}
                   className={`entity-card__formation-model entity-card__formation-model--${activeEntity.components.formation.modelClass}`}
                   style={{
+                    '--model-color': factionColor,
                     gridColumn: `${slot.x + 1} / span ${slot.width}`,
                     gridRow: `${slot.y + 1} / span ${slot.depth}`,
                   }}

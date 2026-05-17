@@ -29,6 +29,23 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
           return
         }
 
+        // Движение: все юниты хода двигаются в одном кадре — CSS transitions анимируют их одновременно
+        if (phase.type === 'movement') {
+          const lastAction = phase.actions.at(-1)
+          const summaries = phase.actions.map((a) => a.summary ?? summarizeAction(a, phase.type))
+          frames.push({
+            id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}`,
+            phaseType: phase.type,
+            label: `Раунд ${round.number} · ${turn.playerName} · ${phase.label}`,
+            summary: summaries.join(' '),
+            logEntries: summaries,
+            units: lastAction.snapshot,
+            overlay: null,
+          })
+          return
+        }
+
+        // Атаки (melee, shooting, magic): каждое действие — отдельный кадр, поочередно
         phase.actions.forEach((action, actionIndex) => {
           frames.push({
             id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-${actionIndex}`,

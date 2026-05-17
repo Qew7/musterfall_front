@@ -4,8 +4,9 @@ import { battlefieldConfig, getHeadingTo, rotateFacing } from '../../game/battle
 import { autoDeployPlayer, setEntityBattlefieldTransform } from '../../game/engine'
 import { healthToModels } from '../../game/entities'
 import { getPlacementDiagnostics, getPreviewOverlay, getWheelSweepDiagnostics } from '../../game/placementPreview'
+import { getFactionPalette } from '../../game/selectors'
 
-export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
+export function FormationBoard({ campaign, catalog, selectedPlayer, setCampaign }) {
   const movableEntities = useMemo(() => {
     return selectedPlayer.roster.filter((entity) => !(entity.kind === 'hero' && entity.state.attachedTo))
   }, [selectedPlayer.roster])
@@ -14,6 +15,7 @@ export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
   const [dragState, setDragState] = useState(null)
   const selectedEntity = movableEntities.find((entity) => entity.id === selectedEntityId) ?? movableEntities[0] ?? null
   const interactiveZone = { xMin: 0, xMax: battlefieldConfig.deploymentDepth - 1, yMin: 0, yMax: battlefieldConfig.height - 1 }
+  const factionColor = getFactionPalette(catalog, selectedPlayer.factionId)
 
   const snapshot = {
     units: movableEntities
@@ -35,6 +37,7 @@ export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
         modelClass: entity.components.formation.modelClass,
         modelWidth: entity.components.formation.modelWidth,
         modelDepth: entity.components.formation.modelDepth,
+        factionColor,
         currentHealth: entity.state.currentHealth,
         maxHealth: entity.components.health.max,
         modelsRemaining: healthToModels(entity),
@@ -144,6 +147,7 @@ export function FormationBoard({ campaign, selectedPlayer, setCampaign }) {
       modelClass: dragState.entity.components.formation.modelClass,
       modelWidth: dragState.entity.components.formation.modelWidth,
       modelDepth: dragState.entity.components.formation.modelDepth,
+      factionColor,
         modelsRemaining: healthToModels(dragState.entity),
         isLegal: Boolean(previewDiagnostics?.isLegal) && !wheelDiagnostics?.isBlocked,
         reasons: [...(previewDiagnostics?.reasons ?? []), ...(wheelDiagnostics?.reasons ?? [])],

@@ -1,3 +1,9 @@
+@property --facing {
+  syntax: '<angle>';
+  inherits: true;
+  initial-value: 0deg;
+}
+
 .app-shell {
   --battlefield-fit-height-default: 65svh;
   --battlefield-fit-height-formation: min(65svh, 860px);
@@ -488,6 +494,21 @@
   stroke: rgba(146, 32, 32, 0.92);
 }
 
+.battlefield-board__projectile {
+  fill: rgba(180, 110, 20, 0.95);
+  filter: drop-shadow(0 0 0.18px rgba(255, 190, 50, 0.85));
+}
+
+.battlefield-board__magic-missile {
+  fill: rgba(60, 100, 230, 0.95);
+  filter: drop-shadow(0 0 0.22px rgba(140, 180, 255, 0.9));
+}
+
+.battlefield-board__melee-flash {
+  stroke: rgba(160, 80, 10, 0.88);
+  stroke-linecap: round;
+}
+
 .battlefield-board__template {
   fill: rgba(25, 116, 138, 0.12);
   stroke: rgba(25, 116, 138, 0.42);
@@ -559,6 +580,16 @@
   transform: translate(-50%, -50%);
   z-index: 2;
   overflow: visible;
+  transition:
+    left 550ms cubic-bezier(0.4, 0, 0.2, 1),
+    top 550ms cubic-bezier(0.4, 0, 0.2, 1),
+    width 550ms cubic-bezier(0.4, 0, 0.2, 1),
+    height 550ms cubic-bezier(0.4, 0, 0.2, 1),
+    --facing 300ms ease-in-out;
+}
+
+.battlefield-unit-shell--instant {
+  transition: none;
 }
 
 .battlefield-unit-shell > .battlefield-unit {
@@ -663,8 +694,12 @@
   position: absolute;
   display: block;
   border-radius: 4px;
-  background: linear-gradient(180deg, rgba(93, 54, 28, 0.92), rgba(45, 23, 9, 0.96));
-  border: 1px solid rgba(255, 244, 228, 0.3);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--model-color, #6a4a35) 68%, #ffffff 32%),
+    color-mix(in srgb, var(--model-color, #6a4a35) 74%, #120a04 26%)
+  );
+  border: 1px solid color-mix(in srgb, var(--model-color, #6a4a35) 42%, #fff1dc 58%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
@@ -687,13 +722,11 @@
 
 .battlefield-unit__model--cavalry {
   border-radius: 6px;
-  background: linear-gradient(180deg, rgba(122, 78, 36, 0.94), rgba(69, 35, 12, 0.98));
 }
 
 .battlefield-unit__model--monster,
 .battlefield-unit__model--machine {
   border-radius: 8px;
-  background: linear-gradient(180deg, rgba(87, 65, 47, 0.94), rgba(36, 24, 16, 0.98));
 }
 
 .battlefield-unit__face {
@@ -911,18 +944,21 @@
 
 .entity-card__formation-model {
   border-radius: 5px;
-  background: linear-gradient(180deg, #704126, #2f1609);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--model-color, #6a4a35) 68%, #ffffff 32%),
+    color-mix(in srgb, var(--model-color, #6a4a35) 74%, #120a04 26%)
+  );
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .entity-card__formation-model--cavalry {
-  background: linear-gradient(180deg, #8e5a2e, #4d2810);
+  border-radius: 6px;
 }
 
 .entity-card__formation-model--monster,
 .entity-card__formation-model--machine {
   border-radius: 8px;
-  background: linear-gradient(180deg, #5c4434, #26160f);
 }
 
 .battlefield {
@@ -1020,7 +1056,11 @@
 .model-dot {
   aspect-ratio: 1;
   border-radius: 4px;
-  background: linear-gradient(180deg, #65351f, #2b1207);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--model-color, #6a4a35) 68%, #ffffff 32%),
+    color-mix(in srgb, var(--model-color, #6a4a35) 74%, #120a04 26%)
+  );
   min-height: 14px;
 }
 
