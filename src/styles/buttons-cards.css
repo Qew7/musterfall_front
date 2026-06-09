@@ -1,0 +1,82 @@
+.player-tab,
+.shop-card,
+.faction-card,
+.ghost-button,
+.primary-button,
+.dismiss-button,
+.draft-card,
+.attach-chip {
+  border: 1px solid rgba(76, 45, 12, 0.15);
+  border-radius: 22px;
+  background: rgba(255, 250, 243, 0.82);
+  color: var(--text-h);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.player-tab,
+.shop-card,
+.faction-card,
+.draft-card {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.player-tab--active,
+.faction-card--selected,
+.attach-chip--active {
+  border-color: color-mix(in srgb, var(--accent-color, var(--accent)) 70%, #ffffff 30%);
+  background: color-mix(in srgb, var(--accent-color, var(--accent)) 12%, #fff7ed 88%);
+}
+
+.player-tab {
+  min-width: 160px;
+}
+
+.faction-card {
+  width: min(220px, 100%);
+  border-color: color-mix(in srgb, var(--accent-color, var(--accent)) 35%, rgba(76, 45, 12, 0.12));
+}
+
+.shop-card small,
+.faction-card small,
+.draft-card small,
+.formation-mini small,
+.unit-formation__labels,
+.unit-formation__rear,
+.unit-formation__front {
+  color: rgba(32, 24, 16, 0.72);
+}
+
+.ghost-button,
+.primary-button,
+.dismiss-button {
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.primary-button {
+  background: linear-gradient(180deg, #8e3b12, #6e2707);
+  color: #fff5e9;
+}
+
+.primary-button--small {
+  padding: 10px 14px;
+}
+
+.dismiss-button {
+  background: rgba(160, 49, 49, 0.08);
+}
+
+.ghost-button:hover,
+.primary-button:hover,
+.dismiss-button:hover,
+.shop-card:hover,
+.faction-card:hover,
+.draft-card:hover,
+.player-tab:hover,
+.attach-chip:hover {
+  transform: translateY(-1px);
+}

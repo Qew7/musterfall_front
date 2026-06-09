@@ -1,0 +1,118 @@
+.topbar,
+.hero-panel,
+.panel,
+.battle-card,
+.player-card,
+.champion-card,
+.details-panel--spec {
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(255, 249, 240, 0.96), rgba(247, 234, 215, 0.86));
+  box-shadow: var(--shadow);
+}
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  background:
+    radial-gradient(circle at top left, rgba(142, 59, 18, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(255, 248, 239, 0.98), rgba(244, 229, 205, 0.92));
+}
+
+.topbar-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.hero-panel,
+.player-card,
+.battle-card,
+.champion-card,
+.panel,
+.details-panel--spec {
+  padding: 16px;
+}
+
+.hero-panel--campaign {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 239, 0.9), rgba(243, 224, 194, 0.94)),
+    radial-gradient(circle at bottom right, rgba(142, 59, 18, 0.16), transparent 36%);
+}
+
+.dial-row,
+.panel-heading,
+.entity-card__top,
+.battle-card__header,
+.formation-board__header,
+.army-preview__header,
+.player-card__header,
+.unit-formation__sides {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dial-row {
+  margin-top: 12px;
+}
+
+.dial-row input {
+  flex: 1;
+}
+
+.details-panel--spec {
+  display: grid;
+  gap: 12px;
+}
+
+.details-panel--spec ul,
+.battle-log,
+.entity-list,
+.market-grid,
+.draft-grid,
+.battle-list,
+.player-picks,
+.formation-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-actions,
+.entity-card__actions,
+.attach-strip,
+.faction-grid,
+.battlefield,
+.market-columns,
+.tab-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.panel--market,
+.panel--roster {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.formation-board,
+.battle-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: visible;
+}

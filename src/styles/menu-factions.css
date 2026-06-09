@@ -1,0 +1,13 @@
+.player-picks,
+.battle-list,
+.entity-list {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.player-picks--single {
+  grid-template-columns: 1fr;
+}
+
+.faction-grid {
+  margin-top: 10px;
+}

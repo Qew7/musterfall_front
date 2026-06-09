@@ -1,0 +1,113 @@
+.formation-board {
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  padding: 14px;
+  width: 100%;
+  background:
+    linear-gradient(180deg, rgba(237, 226, 200, 0.96), rgba(210, 185, 144, 0.82)),
+    linear-gradient(90deg, rgba(96, 61, 20, 0.05), rgba(96, 61, 20, 0.02));
+}
+
+.formation-board .battlefield-board {
+  --battlefield-fit-height: var(--battlefield-fit-height-formation);
+}
+
+.formation-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
+.formation-slot {
+  min-height: 112px;
+  border-radius: 18px;
+  border: 1px dashed rgba(76, 45, 12, 0.22);
+  padding: 14px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  background: rgba(255, 246, 229, 0.52);
+}
+
+.formation-slot--reserve {
+  background: rgba(105, 86, 59, 0.08);
+}
+
+.formation-mini {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.army-preview {
+  flex: 1;
+  display: grid;
+  gap: 14px;
+}
+
+.army-preview--mirrored .unit-formation {
+  direction: rtl;
+}
+
+.army-preview__header {
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent-color, var(--accent)) 15%, #fff8ee 85%);
+}
+
+.army-preview__grid {
+  display: grid;
+  gap: 12px;
+}
+
+.unit-formation {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(76, 45, 12, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.95), rgba(238, 225, 203, 0.92)),
+    linear-gradient(90deg, rgba(110, 77, 39, 0.05), transparent);
+}
+
+.unit-formation__labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.unit-formation__front,
+.unit-formation__rear {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.unit-formation__models {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14px, 1fr));
+  gap: 6px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.model-dot {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--model-color, #6a4a35) 68%, #ffffff 32%),
+    color-mix(in srgb, var(--model-color, #6a4a35) 74%, #120a04 26%)
+  );
+  min-height: 14px;
+}
+
+.model-dot--hero {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #bf8a2d, #6e4911);
+}

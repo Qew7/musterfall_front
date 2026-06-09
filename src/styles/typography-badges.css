@@ -1,0 +1,52 @@
+.meta-badge,
+.status-pill,
+.hero-copy,
+.entity-card__stats span,
+.attach-chip,
+.player-tab small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(88, 55, 29, 0.08);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.meta-badge {
+  flex-direction: column;
+  min-width: 88px;
+}
+
+.meta-badge strong {
+  font-size: 18px;
+  color: var(--text-h);
+}
+
+.status-pill--loading {
+  color: #8a6114;
+}
+
+.status-pill--success {
+  color: #1f6b43;
+}
+
+.status-pill--error {
+  color: #8f2a2a;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 11px;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.lead {
+  max-width: 840px;
+  font-size: 16px;
+}

@@ -1,0 +1,152 @@
+.battlefield-board {
+  margin-top: 6px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  --battlefield-fit-height: var(--battlefield-fit-height-default);
+}
+
+.battlefield-board__surface {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--board-columns), minmax(0, 1fr));
+  width: min(100%, calc(var(--battlefield-fit-height) * (4 / 3)));
+  max-height: var(--battlefield-fit-height);
+  aspect-ratio: 4 / 3;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(76, 45, 12, 0.16);
+  background:
+    linear-gradient(90deg, rgba(142, 59, 18, 0.08) 0 31.25%, rgba(255, 255, 255, 0.08) 31.25% 68.75%, rgba(34, 92, 53, 0.08) 68.75% 100%),
+    linear-gradient(180deg, rgba(245, 233, 214, 0.96), rgba(219, 196, 158, 0.9));
+}
+
+.battlefield-board__overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.battlefield-board__path {
+  stroke: rgba(110, 39, 7, 0.75);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.32 0.18;
+}
+
+.battlefield-board__path--illegal {
+  stroke: rgba(146, 32, 32, 0.9);
+}
+
+.battlefield-board__path--tactical {
+  stroke: rgba(14, 79, 116, 0.9);
+}
+
+.battlefield-board__wheel {
+  fill: none;
+  stroke: rgba(140, 75, 11, 0.78);
+  stroke-width: 0.12;
+  stroke-dasharray: 0.24 0.12;
+}
+
+.battlefield-board__wheel--blocked {
+  stroke: rgba(146, 32, 32, 0.92);
+}
+
+.battlefield-board__los {
+  stroke: rgba(17, 92, 99, 0.82);
+  stroke-width: 0.1;
+  stroke-dasharray: 0.18 0.1;
+}
+
+.battlefield-board__los--blocked {
+  stroke: rgba(146, 32, 32, 0.92);
+}
+
+.battlefield-board__projectile {
+  fill: rgba(180, 110, 20, 0.95);
+  filter: drop-shadow(0 0 0.18px rgba(255, 190, 50, 0.85));
+}
+
+.battlefield-board__magic-missile {
+  fill: rgba(60, 100, 230, 0.95);
+  filter: drop-shadow(0 0 0.22px rgba(140, 180, 255, 0.9));
+}
+
+.battlefield-board__melee-flash {
+  stroke: rgba(160, 80, 10, 0.88);
+  stroke-linecap: round;
+}
+
+.battlefield-board__template {
+  fill: rgba(25, 116, 138, 0.12);
+  stroke: rgba(25, 116, 138, 0.42);
+  stroke-width: 0.08;
+}
+
+.battlefield-board__zone {
+  stroke-width: 0.04;
+}
+
+.battlefield-board__zone--front {
+  fill: rgba(188, 119, 26, 0.14);
+  stroke: rgba(188, 119, 26, 0.34);
+}
+
+.battlefield-board__zone--flank {
+  fill: rgba(112, 78, 34, 0.08);
+  stroke: rgba(112, 78, 34, 0.22);
+}
+
+.battlefield-board__zone--rear {
+  fill: rgba(106, 37, 37, 0.12);
+  stroke: rgba(106, 37, 37, 0.28);
+}
+
+.battlefield-board__footprint {
+  fill: rgba(255, 255, 255, 0.12);
+  stroke: rgba(110, 39, 7, 0.52);
+  stroke-width: 0.07;
+  stroke-dasharray: 0.18 0.12;
+}
+
+.battlefield-board__footprint--illegal {
+  fill: rgba(175, 45, 45, 0.14);
+  stroke: rgba(146, 32, 32, 0.92);
+}
+
+.battlefield-board__cell {
+  aspect-ratio: 1;
+  border-right: 1px solid rgba(76, 45, 12, 0.08);
+  border-bottom: 1px solid rgba(76, 45, 12, 0.08);
+  background: transparent;
+}
+
+.battlefield-board__cell--interactive {
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.battlefield-board__cell--interactive:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.battlefield-board__handle {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  z-index: 4;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(76, 45, 12, 0.18);
+  background: rgba(255, 250, 243, 0.92);
+  color: var(--text-h);
+  box-shadow: 0 8px 18px rgba(40, 21, 8, 0.12);
+}
+
+.battlefield {
+  align-items: start;
+}

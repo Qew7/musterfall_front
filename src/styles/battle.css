@@ -1,0 +1,138 @@
+.battle-card {
+  width: 100%;
+  --battlefield-fit-height: var(--battlefield-fit-height-default);
+}
+
+.battle-card__status {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0;
+}
+
+.battle-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, calc(var(--battlefield-fit-height) * (4 / 3))) minmax(260px, 300px);
+  gap: 14px;
+  align-items: start;
+  justify-content: center;
+  min-height: 0;
+}
+
+.battle-card__side {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  max-width: 300px;
+  justify-self: center;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(76, 45, 12, 0.1);
+  background: rgba(255, 250, 243, 0.7);
+}
+
+.battle-card .battlefield-board {
+  width: min(100%, calc(var(--battlefield-fit-height) * (4 / 3)));
+  justify-content: center;
+  margin-top: 0;
+}
+
+.battle-log {
+  margin-top: 0;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  font-size: 13px;
+  max-height: var(--battle-log-max-height);
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.battle-replay-card__summary {
+  margin-top: 0;
+  padding: 10px 12px;
+  min-height: 92px;
+  max-height: 92px;
+  border-radius: 18px;
+  background: rgba(255, 250, 243, 0.86);
+  border: 1px solid rgba(76, 45, 12, 0.1);
+  overflow: hidden;
+}
+
+.battle-replay-card__summary strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.battle-replay-card__summary p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 6px 0 0;
+}
+
+.battle-log__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 2px;
+}
+
+.battle-log__title-row span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(88, 55, 29, 0.08);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.battle-log__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(76, 45, 12, 0.08);
+  background: rgba(255, 255, 255, 0.52);
+}
+
+.battle-log__index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(88, 55, 29, 0.1);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+.battle-winner {
+  color: var(--text-h);
+}
+
+.champion-card--compact {
+  padding: 18px;
+}
+
+.champion-card--final {
+  background:
+    radial-gradient(circle at top, rgba(201, 166, 62, 0.22), transparent 44%),
+    linear-gradient(180deg, rgba(255, 248, 232, 0.98), rgba(243, 229, 197, 0.94));
+}
