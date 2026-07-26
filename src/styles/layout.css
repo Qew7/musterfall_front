@@ -5,18 +5,16 @@
 }
 
 .app-shell {
-  --battlefield-fit-height-default: 65svh;
-  --battlefield-fit-height-formation: min(65svh, 860px);
-  --battlefield-fit-height-compact: min(65svh, 700px);
-  --battlefield-fit-height-formation-compact: min(65svh, 760px);
-  --battle-log-max-height: min(60svh, 760px);
-  --battle-log-max-height-compact: min(54svh, 700px);
+  --battlefield-fit-height-default: 100svh;
+  --battlefield-fit-height-formation: 100svh;
+  --battlefield-fit-height-compact: 100svh;
+  --battlefield-fit-height-formation-compact: 100svh;
 
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   height: 100svh;
-  padding: 14px;
+  padding: 8px;
   text-align: left;
   box-sizing: border-box;
   overflow: hidden;
@@ -27,20 +25,28 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   overflow: hidden;
 }
 
 .screen-grid {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
   min-height: 0;
 }
 
 .screen-grid--locked {
   overflow: hidden;
+}
+
+.screen-grid--field {
+  gap: 6px;
+}
+
+.screen-grid--field .menu-actions {
+  display: none;
 }
 
 .screen-grid--menu {

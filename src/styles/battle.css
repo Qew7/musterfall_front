@@ -3,61 +3,117 @@
   --battlefield-fit-height: var(--battlefield-fit-height-default);
 }
 
+.battle-card__header {
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.battle-card__header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.battle-card__header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.battle-card__header-actions .primary-button {
+  padding: 7px 12px;
+  font-size: 13px;
+  border-radius: 14px;
+}
+
 .battle-card__status {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  margin: 8px 0;
+  margin: 0;
+  font-size: 0.92rem;
+  flex-shrink: 0;
 }
 
 .battle-card__body {
-  display: grid;
-  grid-template-columns: minmax(0, calc(var(--battlefield-fit-height) * (4 / 3))) minmax(260px, 300px);
-  gap: 14px;
-  align-items: start;
+  --battle-side-width: 250px;
+  container-type: size;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
   justify-content: center;
+  flex: 1;
   min-height: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
 .battle-card__side {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+  flex: 0 0 var(--battle-side-width);
+  width: var(--battle-side-width);
+  min-width: 220px;
+  max-width: 260px;
   min-height: 0;
-  height: 100%;
-  width: 100%;
-  max-width: 300px;
-  justify-self: center;
-  padding: 10px;
-  border-radius: 20px;
+  height: min(100cqb, calc((100cqi - var(--battle-side-width) - 10px) * var(--board-rows, 24) / var(--board-columns, 40)));
+  max-height: 100%;
+  padding: 8px;
+  border-radius: 16px;
   border: 1px solid rgba(76, 45, 12, 0.1);
   background: rgba(255, 250, 243, 0.7);
+  overflow: hidden;
+  box-sizing: border-box;
+  align-self: center;
 }
 
 .battle-card .battlefield-board {
-  width: min(100%, calc(var(--battlefield-fit-height) * (4 / 3)));
+  /* Size to the board itself so [field + logs] can sit as one centered group. */
+  flex: 0 0 auto;
+  width: min(calc(100cqi - var(--battle-side-width) - 10px), calc(100cqb * var(--board-columns) / var(--board-rows)));
+  height: min(100cqb, calc((100cqi - var(--battle-side-width) - 10px) * var(--board-rows) / var(--board-columns)));
+  max-width: calc(100% - var(--battle-side-width) - 10px);
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
+  align-self: center;
   justify-content: center;
   margin-top: 0;
+  container-type: normal;
+}
+
+.battle-card .battlefield-board__surface {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
 }
 
 .battle-log {
-  margin-top: 0;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 0;
   font-size: 13px;
-  max-height: var(--battle-log-max-height);
   overflow: auto;
-  padding-right: 2px;
+  overscroll-behavior: contain;
+  padding: 0 2px 6px 0;
 }
 
 .battle-replay-card__summary {
   margin-top: 0;
-  padding: 10px 12px;
-  min-height: 92px;
-  max-height: 92px;
-  border-radius: 18px;
+  padding: 8px 10px;
+  min-height: 0;
+  max-height: none;
+  flex-shrink: 0;
+  border-radius: 14px;
   background: rgba(255, 250, 243, 0.86);
   border: 1px solid rgba(76, 45, 12, 0.1);
   overflow: hidden;
@@ -73,10 +129,12 @@
 .battle-replay-card__summary p {
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 6px 0 0;
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
 }
 
 .battle-log__title-row {
@@ -84,7 +142,12 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 6px 2px;
+  padding: 2px 2px 4px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  background: rgba(255, 250, 243, 0.92);
+  z-index: 1;
 }
 
 .battle-log__title-row span {
@@ -105,7 +168,7 @@
   gap: 8px;
   align-items: start;
   margin: 0;
-  padding: 8px 10px;
+  padding: 7px 9px;
   border-radius: 12px;
   border: 1px solid rgba(76, 45, 12, 0.08);
   background: rgba(255, 255, 255, 0.52);
@@ -125,6 +188,7 @@
 
 .battle-winner {
   color: var(--text-h);
+  font-size: 0.95rem;
 }
 
 .champion-card--compact {

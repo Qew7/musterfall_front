@@ -9,6 +9,23 @@
   border-radius: 16px;
 }
 
+.tab-bar--dense {
+  border-radius: 12px;
+  padding: 2px;
+  flex-wrap: nowrap;
+}
+
+.tab-bar--dense .tab-bar__item {
+  min-width: 0;
+  padding: 6px 10px;
+  border-radius: 10px;
+  gap: 0;
+}
+
+.tab-bar--dense .tab-bar__item small {
+  display: none;
+}
+
 .tab-bar__item {
   display: grid;
   gap: 2px;

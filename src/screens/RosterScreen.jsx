@@ -24,11 +24,24 @@ export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer,
     { id: 'formation', label: 'Расстановка', meta: 'позиции на поле' },
   ]
   const [activePrepTab, setActivePrepTab] = useState('roster')
+  const isFormation = activePrepTab === 'formation'
 
   return (
-    <section className="screen-grid screen-grid--locked">
-      <TabBar tabs={playerTabs} activeId={selectedPlayer.id} onChange={onSelectPlayer} ariaLabel="Игроки" />
-      <TabBar tabs={prepTabs} activeId={activePrepTab} onChange={setActivePrepTab} ariaLabel="Подготовка" className="tab-bar--compact" />
+    <section className={`screen-grid screen-grid--locked ${isFormation ? 'screen-grid--field' : ''}`}>
+      <TabBar
+        tabs={playerTabs}
+        activeId={selectedPlayer.id}
+        onChange={onSelectPlayer}
+        ariaLabel="Игроки"
+        className={isFormation ? 'tab-bar--dense' : ''}
+      />
+      <TabBar
+        tabs={prepTabs}
+        activeId={activePrepTab}
+        onChange={setActivePrepTab}
+        ariaLabel="Подготовка"
+        className={`tab-bar--compact ${isFormation ? 'tab-bar--dense' : ''}`.trim()}
+      />
 
       <section className="screen-body">
         {activePrepTab === 'roster' && (
@@ -38,19 +51,30 @@ export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer,
           </section>
         )}
 
-        {activePrepTab === 'formation' && (
-          <FormationBoard catalog={catalog} selectedPlayer={selectedPlayer} dispatchCommand={dispatchCommand} />
+        {isFormation && (
+          <FormationBoard
+            catalog={catalog}
+            selectedPlayer={selectedPlayer}
+            dispatchCommand={dispatchCommand}
+            roundNumber={campaign.round}
+            hasMultiplePlayers={hasMultiplePlayers}
+            isBusy={isBusy}
+            onNextPreparation={onNextPreparation}
+            onBeginRound={onBeginRound}
+          />
         )}
       </section>
 
-      <div className="menu-actions">
-        <button type="button" className="ghost-button" onClick={onNextPreparation} disabled={!hasMultiplePlayers}>
-          Следующий игрок
-        </button>
-        <button type="button" className="primary-button" onClick={onBeginRound} disabled={isBusy}>
-          Начать раунд {campaign.round}
-        </button>
-      </div>
+      {!isFormation && (
+        <div className="menu-actions">
+          <button type="button" className="ghost-button" onClick={onNextPreparation} disabled={!hasMultiplePlayers}>
+            Следующий игрок
+          </button>
+          <button type="button" className="primary-button" onClick={onBeginRound} disabled={isBusy}>
+            Начать раунд {campaign.round}
+          </button>
+        </div>
+      )}
     </section>
   )
 }

@@ -111,7 +111,14 @@ export function BattlefieldBoard({
   }
 
   return (
-    <div className="battlefield-board" style={{ '--board-columns': width, '--board-rows': height }}>
+    <div
+      className="battlefield-board"
+      style={{
+        '--board-columns': width,
+        '--board-rows': height,
+        '--deployment-depth': battlefieldConfig.deploymentDepth,
+      }}
+    >
       <div className="battlefield-board__surface" onPointerUp={() => onSurfacePointerUp?.()}>
         <svg className="battlefield-board__overlay" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
           {selectedZones && (

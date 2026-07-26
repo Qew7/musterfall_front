@@ -5,7 +5,16 @@ import { healthToModels } from '../../game/entities'
 import { getPlacementDiagnostics, getPreviewOverlay, getWheelSweepDiagnostics } from '../../game/placementPreview'
 import { getFactionPalette } from '../../game/selectors'
 
-export function FormationBoard({ catalog, selectedPlayer, dispatchCommand }) {
+export function FormationBoard({
+  catalog,
+  selectedPlayer,
+  dispatchCommand,
+  roundNumber,
+  hasMultiplePlayers = false,
+  isBusy = false,
+  onNextPreparation,
+  onBeginRound,
+}) {
   const movableEntities = useMemo(() => {
     return selectedPlayer.roster.filter((entity) => !(entity.kind === 'hero' && entity.state.attachedTo))
   }, [selectedPlayer.roster])
@@ -174,16 +183,26 @@ export function FormationBoard({ catalog, selectedPlayer, dispatchCommand }) {
   return (
     <section className="formation-board">
       <div className="formation-board__header">
-        <div>
-          <h2>Поле расстановки</h2>
+        <h2>Расстановка</h2>
+        <div className="formation-board__actions">
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => dispatchCommand({ type: 'deploy_auto', playerId: selectedPlayer.id })}
+          >
+            Авто
+          </button>
+          {onNextPreparation && (
+            <button type="button" className="ghost-button" onClick={onNextPreparation} disabled={!hasMultiplePlayers}>
+              След. игрок
+            </button>
+          )}
+          {onBeginRound && (
+            <button type="button" className="primary-button" onClick={onBeginRound} disabled={isBusy}>
+              Начать раунд {roundNumber}
+            </button>
+          )}
         </div>
-        <button
-          type="button"
-          className="ghost-button"
-          onClick={() => dispatchCommand({ type: 'deploy_auto', playerId: selectedPlayer.id })}
-        >
-          Авторасстановка
-        </button>
       </div>
 
       <BattlefieldBoard

@@ -69,11 +69,23 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
   }
 
   return (
-    <section className="screen-grid screen-grid--locked">
-      <TabBar tabs={contextTabs} activeId={activeContextTab} onChange={setActiveContextTab} ariaLabel="Контекст боя" />
+    <section className="screen-grid screen-grid--locked screen-grid--field">
+      <TabBar
+        tabs={contextTabs}
+        activeId={activeContextTab}
+        onChange={setActiveContextTab}
+        ariaLabel="Контекст боя"
+        className="tab-bar--dense"
+      />
 
       {battleTabs.length > 1 && (
-        <TabBar tabs={battleTabs} activeId={activeBattle?.battleId ?? battleTabs[0].id} onChange={setActiveBattleId} ariaLabel="Матч" className="tab-bar--compact" />
+        <TabBar
+          tabs={battleTabs}
+          activeId={activeBattle?.battleId ?? battleTabs[0].id}
+          onChange={setActiveBattleId}
+          ariaLabel="Матч"
+          className="tab-bar--compact tab-bar--dense"
+        />
       )}
 
       {campaign.lastRoundReport.byes.length > 0 && (
@@ -92,6 +104,8 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
             roundNumber={campaign.lastRoundReport.round}
             compact
             onPlaybackProgress={handlePlaybackProgress}
+            continueLabel={campaign.winnerId ? 'В меню' : 'К следующему набору'}
+            onContinue={onContinue}
           />
         )}
       </section>
@@ -103,12 +117,6 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
           <p>{championFactionName} пережил всех и получает мета-награду.</p>
         </article>
       )}
-
-      <div className="menu-actions">
-        <button type="button" className="primary-button" onClick={onContinue}>
-          {campaign.winnerId ? 'Вернуться в меню' : 'К следующему набору'}
-        </button>
-      </div>
     </section>
   )
 }

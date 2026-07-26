@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { BattlefieldBoard } from './BattlefieldBoard'
 
-export function BattleReplayCard({ battle, roundNumber, compact = false, onPlaybackProgress }) {
+export function BattleReplayCard({
+  battle,
+  roundNumber,
+  compact = false,
+  onPlaybackProgress,
+  continueLabel,
+  onContinue,
+}) {
   const frames = battle.replay?.frames ?? []
   const [frameIndex, setFrameIndex] = useState(0)
   // Отключаем transitions на первом кадре нового боя, чтобы юниты не "съезжались" с начала
@@ -78,7 +85,14 @@ export function BattleReplayCard({ battle, roundNumber, compact = false, onPlayb
           <p className="eyebrow">Раунд {roundNumber}</p>
           <h2>{battleTitle}</h2>
         </div>
-        {isFinalFrame && <strong className="battle-winner">Победил: {battle.winnerName}</strong>}
+        <div className="battle-card__header-actions">
+          {isFinalFrame && <strong className="battle-winner">Победил: {battle.winnerName}</strong>}
+          {onContinue && (
+            <button type="button" className="primary-button" onClick={onContinue}>
+              {continueLabel}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="battle-card__status">

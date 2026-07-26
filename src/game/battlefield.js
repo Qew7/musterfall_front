@@ -1,7 +1,7 @@
 import { laneOrder, rowOrder } from './constants'
 
 export const battlefieldConfig = {
-  width: 32,
+  width: 40,
   height: 24,
   deploymentDepth: 10,
   frontArcDegrees: 120,

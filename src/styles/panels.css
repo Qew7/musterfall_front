@@ -76,7 +76,6 @@
 }
 
 .details-panel--spec ul,
-.battle-log,
 .entity-list,
 .market-grid,
 .draft-grid,
@@ -112,7 +111,13 @@
 .battle-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
   min-height: 0;
-  overflow: visible;
+  width: 100%;
+  overflow: hidden;
+}
+
+.battle-card {
+  padding: 10px 12px;
+  flex: 1;
 }

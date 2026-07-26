@@ -1,24 +1,36 @@
 .battlefield-board {
-  margin-top: 6px;
+  margin-top: 0;
   width: 100%;
+  min-height: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  container-type: size;
   --battlefield-fit-height: var(--battlefield-fit-height-default);
 }
 
 .battlefield-board__surface {
+  --deployment-zone-end: calc(var(--deployment-depth) / var(--board-columns) * 100%);
+  --enemy-zone-start: calc((var(--board-columns) - var(--deployment-depth)) / var(--board-columns) * 100%);
   position: relative;
   display: grid;
   grid-template-columns: repeat(var(--board-columns), minmax(0, 1fr));
-  width: min(100%, calc(var(--battlefield-fit-height) * (4 / 3)));
-  max-height: var(--battlefield-fit-height);
-  aspect-ratio: 4 / 3;
-  border-radius: 24px;
+  /* Width is capped by both container axes so aspect-ratio height never exceeds the slot. */
+  width: min(100cqi, calc(100cqb * var(--board-columns) / var(--board-rows)));
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  aspect-ratio: var(--board-columns) / var(--board-rows);
+  border-radius: 20px;
   overflow: hidden;
   border: 1px solid rgba(76, 45, 12, 0.16);
   background:
-    linear-gradient(90deg, rgba(142, 59, 18, 0.08) 0 31.25%, rgba(255, 255, 255, 0.08) 31.25% 68.75%, rgba(34, 92, 53, 0.08) 68.75% 100%),
+    linear-gradient(
+      90deg,
+      rgba(142, 59, 18, 0.08) 0 var(--deployment-zone-end),
+      rgba(255, 255, 255, 0.08) var(--deployment-zone-end) var(--enemy-zone-start),
+      rgba(34, 92, 53, 0.08) var(--enemy-zone-start) 100%
+    ),
     linear-gradient(180deg, rgba(245, 233, 214, 0.96), rgba(219, 196, 158, 0.9));
 }
 
