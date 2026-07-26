@@ -41,6 +41,7 @@ export function createUnitEntity(catalog, templateId, ownerId) {
         requiresLineOfSight: template.requiresLineOfSight,
         initiative: template.initiative,
         attacks: template.attacks,
+        missileAttacks: template.missileAttacks ?? 1,
       },
       formation: {
         models: template.models,
@@ -101,6 +102,7 @@ export function createHeroEntity(catalog, templateId, ownerId, free = false) {
         requiresLineOfSight: template.requiresLineOfSight,
         initiative: template.initiative,
         attacks: template.attacks,
+        missileAttacks: template.missileAttacks ?? 1,
       },
       formation: {
         models: template.models,

@@ -78,6 +78,7 @@ function normalizeTemplate(entry) {
     abilities: expectArray(entry.abilities, 'templates[].abilities').map((value) => expectString(value, 'templates[].abilities[]')),
     mounted: Boolean(entry.mounted),
     attacks: expectNumber(entry.attacks, 'templates[].attacks'),
+    missileAttacks: expectNumber(entry.missileAttacks ?? 1, 'templates[].missileAttacks'),
   }
 }
 
