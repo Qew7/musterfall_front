@@ -149,6 +149,16 @@ export function getShortestFacingDelta(fromFacing, toFacing) {
   return delta
 }
 
+/** Continuous (unnormalized) facing for CSS angle transitions along the shortest arc. */
+export function advanceContinuousFacing(previousDisplayFacing, targetFacing, { snap = false } = {}) {
+  const normalizedTarget = normalizeFacing(targetFacing)
+  if (previousDisplayFacing == null || snap) {
+    return normalizedTarget
+  }
+
+  return previousDisplayFacing + getShortestFacingDelta(previousDisplayFacing, normalizedTarget)
+}
+
 export function getUnitDimensions(unit) {
   return {
     halfWidth: Math.max(0, (unit.baseWidth ?? unit.width ?? 0) / 2),

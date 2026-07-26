@@ -1,4 +1,5 @@
-import { battlefieldConfig } from '../../game/battlefield'
+import { useRef } from 'react'
+import { advanceContinuousFacing, battlefieldConfig, normalizeFacing } from '../../game/battlefield'
 import { buildFormationLayout } from '../../game/formation'
 import { getFacingZonePolygons, getFootprintGeometry } from '../../game/placementPreview'
 
@@ -24,6 +25,7 @@ export function BattlefieldBoard({
   const width = snapshot?.width ?? battlefieldConfig.width
   const height = snapshot?.height ?? battlefieldConfig.height
   const units = snapshot?.units ?? []
+  const facingContinuityRef = useRef({ targetById: new Map(), displayById: new Map() })
   const cells = Array.from({ length: width * height }, (_, index) => {
     const x = index % width
     const y = Math.floor(index / width)
@@ -38,6 +40,29 @@ export function BattlefieldBoard({
     : units.find((unit) => unit.entityId === selectedUnitId) ?? null
   const selectedZones = showFacingZones && selectedUnit ? getFacingZonePolygons(selectedUnit) : null
   const previewGeometry = previewPlacement ? getFootprintGeometry(previewPlacement) : null
+  const activeUnitIds = new Set(units.map((unit) => unit.entityId))
+  const { targetById, displayById } = facingContinuityRef.current
+
+  for (const entityId of [...displayById.keys()]) {
+    if (!activeUnitIds.has(entityId)) {
+      displayById.delete(entityId)
+      targetById.delete(entityId)
+    }
+  }
+
+  const displayFacingById = new Map()
+  for (const unit of units) {
+    const normalizedTarget = normalizeFacing(unit.facing)
+    const previousTarget = targetById.get(unit.entityId)
+    const previousDisplay = displayById.get(unit.entityId)
+    const nextDisplay = previousTarget === normalizedTarget && previousDisplay != null && !instantUnits
+      ? previousDisplay
+      : advanceContinuousFacing(previousDisplay, normalizedTarget, { snap: instantUnits })
+
+    targetById.set(unit.entityId, normalizedTarget)
+    displayById.set(unit.entityId, nextDisplay)
+    displayFacingById.set(unit.entityId, nextDisplay)
+  }
 
   return (
     <div className="battlefield-board" style={{ '--board-columns': width, '--board-rows': height }}>
@@ -247,11 +272,13 @@ export function BattlefieldBoard({
             ? `battlefield-unit--contact-${tacticalOverlay.contactVector}`
             : ''
 
+          const displayFacing = displayFacingById.get(unit.entityId) ?? normalizeFacing(unit.facing)
+
           return (
             <div
               key={unit.entityId}
               className={`battlefield-unit-shell${instantUnits ? ' battlefield-unit-shell--instant' : ''}`}
-              style={{ left: leftPercent, top: topPercent, width: widthPercent, height: heightPercent, '--facing': `${unit.facing}deg` }}
+              style={{ left: leftPercent, top: topPercent, width: widthPercent, height: heightPercent, '--facing': `${displayFacing}deg` }}
             >
               <button
                 type="button"
