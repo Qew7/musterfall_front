@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react'
 import { BattlefieldBoard } from '../battlefield/BattlefieldBoard'
 import { battlefieldConfig, getHeadingTo, rotateFacing } from '../../game/battlefield'
-import { autoDeployPlayer, setEntityBattlefieldTransform } from '../../game/engine'
 import { healthToModels } from '../../game/entities'
 import { getPlacementDiagnostics, getPreviewOverlay, getWheelSweepDiagnostics } from '../../game/placementPreview'
 import { getFactionPalette } from '../../game/selectors'
 
-export function FormationBoard({ campaign, catalog, selectedPlayer, setCampaign }) {
+export function FormationBoard({ catalog, selectedPlayer, dispatchCommand }) {
   const movableEntities = useMemo(() => {
     return selectedPlayer.roster.filter((entity) => !(entity.kind === 'hero' && entity.state.attachedTo))
   }, [selectedPlayer.roster])
@@ -79,13 +78,14 @@ export function FormationBoard({ campaign, catalog, selectedPlayer, setCampaign 
     : null
 
   function commitPreviewPlacement(previewState) {
-    setCampaign(
-      setEntityBattlefieldTransform(campaign, selectedPlayer.id, previewState.entity.id, {
-        x: previewState.preview.x,
-        y: previewState.preview.y,
-        facing: previewState.preview.facing,
-      }),
-    )
+    dispatchCommand({
+      type: 'deploy_transform',
+      playerId: selectedPlayer.id,
+      entityId: previewState.entity.id,
+      x: previewState.preview.x,
+      y: previewState.preview.y,
+      facing: previewState.preview.facing,
+    })
     setDragState(null)
   }
 
@@ -177,7 +177,11 @@ export function FormationBoard({ campaign, catalog, selectedPlayer, setCampaign 
         <div>
           <h2>Поле расстановки</h2>
         </div>
-        <button type="button" className="ghost-button" onClick={() => setCampaign(autoDeployPlayer(campaign, selectedPlayer.id))}>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={() => dispatchCommand({ type: 'deploy_auto', playerId: selectedPlayer.id })}
+        >
           Авторасстановка
         </button>
       </div>
@@ -202,7 +206,13 @@ export function FormationBoard({ campaign, catalog, selectedPlayer, setCampaign 
             return
           }
 
-          setCampaign(setEntityBattlefieldTransform(campaign, selectedPlayer.id, selectedEntity.id, { x, y }))
+          dispatchCommand({
+            type: 'deploy_transform',
+            playerId: selectedPlayer.id,
+            entityId: selectedEntity.id,
+            x,
+            y,
+          })
         }}
         onCellHover={(x, y) => {
           if (!dragState) {

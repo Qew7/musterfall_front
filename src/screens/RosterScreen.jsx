@@ -5,7 +5,7 @@ import { FormationBoard } from '../components/roster/FormationBoard'
 import { TabBar } from '../components/TabBar'
 import { getPlayerSummary } from '../game/selectors'
 
-export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer, onSelectPlayer, setCampaign, onNextPreparation, onBeginRound, isBusy }) {
+export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer, onSelectPlayer, dispatchCommand, onNextPreparation, onBeginRound, isBusy }) {
   const hasMultiplePlayers = activePlayers.length > 1
   const playerTabs = useMemo(
     () => activePlayers.map((player) => {
@@ -33,13 +33,13 @@ export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer,
       <section className="screen-body">
         {activePrepTab === 'roster' && (
           <section className="roster-layout">
-            <RecruitmentPanel campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
-            <RosterEntitiesPanel campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
+            <RecruitmentPanel catalog={catalog} selectedPlayer={selectedPlayer} dispatchCommand={dispatchCommand} />
+            <RosterEntitiesPanel catalog={catalog} selectedPlayer={selectedPlayer} dispatchCommand={dispatchCommand} />
           </section>
         )}
 
         {activePrepTab === 'formation' && (
-          <FormationBoard campaign={campaign} catalog={catalog} selectedPlayer={selectedPlayer} setCampaign={setCampaign} />
+          <FormationBoard catalog={catalog} selectedPlayer={selectedPlayer} dispatchCommand={dispatchCommand} />
         )}
       </section>
 

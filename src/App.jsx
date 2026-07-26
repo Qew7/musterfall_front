@@ -3,7 +3,6 @@ import { AppHeader } from './components/AppHeader'
 import { useBootstrapData } from './hooks/useBootstrapData'
 import { useCampaignSession } from './hooks/useCampaignSession'
 import { listAvailableFactions } from './game/catalog'
-import { assignFaction } from './game/engine'
 import { BattleScreen } from './screens/BattleScreen'
 import { FactionsScreen } from './screens/FactionsScreen'
 import { MenuScreen } from './screens/MenuScreen'
@@ -19,7 +18,7 @@ function App() {
     playerCount,
     setPlayerCount,
     campaign,
-    setCampaign,
+    dispatchCommand,
     setActivePlayerId,
     activePlayers,
     selectedPlayer,
@@ -64,7 +63,7 @@ function App() {
             campaign={campaign}
             factions={factions}
             canAdvance={canAdvanceFromFactions}
-            onAssignFaction={(playerId, factionId) => setCampaign(assignFaction(campaign, catalog, playerId, factionId))}
+            onAssignFaction={(playerId, factionId) => dispatchCommand({ type: 'assign_faction', playerId, factionId })}
             onContinue={continueFromFactions}
           />
         )}
@@ -76,7 +75,7 @@ function App() {
             activePlayers={activePlayers}
             selectedPlayer={selectedPlayer}
             onSelectPlayer={setActivePlayerId}
-            setCampaign={setCampaign}
+            dispatchCommand={dispatchCommand}
             onNextPreparation={nextPreparation}
             onBeginRound={beginRound}
             isBusy={operationState.busy}

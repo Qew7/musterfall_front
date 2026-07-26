@@ -1,9 +1,8 @@
 import { getTemplate, listHeroTemplates, listUnitTemplates } from './catalog'
 import { clampDeploymentPosition, createDefaultDeployment, rotateFacing, syncFormationSlotsFromDeployment } from './battlefield'
 import { laneOrder, rowOrder } from './constants'
-import { simulateBattle } from './battle'
-import { cloneState, createHeroEntity, createUnitEntity, isDeployable } from './entities'
-import { applyHeroUpgrade, isHeroLevelReady, rollHeroDraft } from './upgrades'
+import { cloneState, createHeroEntity, createUnitEntity } from './entities'
+import { applyHeroUpgrade } from './upgrades'
 
 const battleRows = rowOrder.filter((row) => row !== 'reserve')
 const startingTreasury = 36
@@ -95,36 +94,6 @@ export function dismissEntity(campaign, playerId, entityId) {
   return next
 }
 
-export function cycleEntityPosition(campaign, playerId, entityId, axis) {
-  const next = cloneState(campaign)
-  const player = next.players.find((entry) => entry.id === playerId)
-  const entity = player?.roster.find((entry) => entry.id === entityId)
-
-  if (!player || !entity) {
-    return campaign
-  }
-
-  const sequence = axis === 'lane' ? laneOrder : rowOrder
-  const current = entity.components.formation[axis]
-  const index = sequence.indexOf(current)
-  const nextValue = sequence[(index + 1 + sequence.length) % sequence.length]
-
-  if (axis === 'lane') {
-    applyFormationSlot(entity, entity.components.formation.row, nextValue)
-  } else {
-    applyFormationSlot(entity, nextValue, entity.components.formation.lane)
-  }
-
-  if (entity.kind === 'hero' && entity.state.attachedTo) {
-    const host = player.roster.find((entry) => entry.id === entity.state.attachedTo)
-    if (host) {
-      syncAttachedHeroFormation(entity, host)
-    }
-  }
-
-  return next
-}
-
 export function attachHero(campaign, playerId, heroId, unitId) {
   const next = cloneState(campaign)
   const player = next.players.find((entry) => entry.id === playerId)
@@ -158,10 +127,6 @@ export function attachHero(campaign, playerId, heroId, unitId) {
   unit.state.attachedHeroIds = [...new Set([...unit.state.attachedHeroIds, heroId])]
 
   return next
-}
-
-export function placeEntityOnBattlefield(campaign, playerId, entityId, x, y) {
-  return setEntityBattlefieldTransform(campaign, playerId, entityId, { x, y })
 }
 
 export function setEntityBattlefieldTransform(campaign, playerId, entityId, placement) {
@@ -232,27 +197,6 @@ export function autoDeployPlayer(campaign, playerId) {
   return next
 }
 
-export function prepareCampaignForRound(campaign, catalog, random = Math.random) {
-  const next = cloneState(campaign)
-
-  assignRandomFactions(next, catalog, random)
-  prepareBots(next, catalog, random)
-
-  return next
-}
-
-export function prepareHeroDraft(campaign, catalog, playerId, heroId) {
-  const next = cloneState(campaign)
-  const hero = findEntity(next, playerId, heroId)
-
-  if (!hero || hero.kind !== 'hero' || !isHeroLevelReady(hero)) {
-    return campaign
-  }
-
-  hero.components.progression.pendingDraft = rollHeroDraft(hero, catalog)
-  return next
-}
-
 export function pickHeroDraft(campaign, playerId, heroId, upgradeId) {
   const next = cloneState(campaign)
   const hero = findEntity(next, playerId, heroId)
@@ -276,142 +220,8 @@ export function getRecruitmentOptions(catalog, player) {
   }
 }
 
-export function runCampaignRound(campaign, catalog) {
-  const next = cloneState(campaign)
-  const activePlayers = next.players.filter((player) => player.status === 'active')
-
-  if (activePlayers.length <= 1) {
-    return next
-  }
-
-  activePlayers.forEach((player) => ensureDeployment(player))
-
-  const report = {
-    round: next.round,
-    matchups: [],
-    byes: [],
-  }
-
-  const queue = [...activePlayers]
-
-  while (queue.length > 1) {
-    const attacker = queue.shift()
-    const defender = queue.shift()
-    const battle = simulateBattle(attacker, defender, catalog)
-    report.matchups.push(battle)
-
-    const loserId = battle.winnerId === attacker.id ? defender.id : attacker.id
-    const winner = next.players.find((player) => player.id === battle.winnerId)
-    const loser = next.players.find((player) => player.id === loserId)
-
-    if (winner) {
-      winner.treasury += 12
-      winner.victories += 1
-      winner.roundNotes = [`Победа в раунде ${next.round}: +12 припасов`]
-    }
-
-    if (loser) {
-      loser.status = 'eliminated'
-      loser.roundNotes = [`Разбит в раунде ${next.round}`]
-    }
-  }
-
-  if (queue.length === 1) {
-    const byePlayer = queue[0]
-    byePlayer.treasury += 8
-    byePlayer.roundNotes = [`Раунд ${next.round}: свободный проход, +8 припасов`]
-    report.byes.push({ playerId: byePlayer.id, playerName: byePlayer.name })
-  }
-
-  const survivors = next.players.filter((player) => player.status === 'active')
-  if (survivors.length === 1) {
-    next.winnerId = survivors[0].id
-  }
-
-  next.lastRoundReport = report
-  next.round += 1
-  return next
-}
-
-export function buildMetaReward(campaign) {
-  if (!campaign.winnerId) {
-    return null
-  }
-
-  const winner = campaign.players.find((player) => player.id === campaign.winnerId)
-  if (!winner) {
-    return null
-  }
-
-  return {
-    playerId: winner.id,
-    playerName: winner.name,
-    factionId: winner.factionId,
-    experience: 25 + winner.victories * 5,
-    essence: 3 + winner.victories,
-  }
-}
-
 function findEntity(campaign, playerId, entityId) {
   return campaign.players.find((entry) => entry.id === playerId)?.roster.find((entry) => entry.id === entityId) ?? null
-}
-
-function ensureDeployment(player) {
-  const deployable = player.roster.filter((entry) => entry.state.currentHealth > 0)
-  const visible = deployable.filter((entry) => isDeployable(entry) || (entry.kind === 'hero' && entry.state.attachedTo))
-
-  if (visible.length > 0) {
-    return
-  }
-
-  deployPlayerInPlace(player)
-}
-
-function assignRandomFactions(campaign, catalog, random) {
-  campaign.players.forEach((player) => {
-    if (player.factionId) {
-      return
-    }
-
-    const factionId = pickRandomFactionId(catalog, random)
-    if (!factionId) {
-      return
-    }
-
-    applyFactionAssignment(player, catalog, factionId)
-  })
-}
-
-function prepareBots(campaign, catalog, random) {
-  campaign.players.forEach((player) => {
-    if (!player.isBot || player.status !== 'active' || !player.factionId) {
-      return
-    }
-
-    recruitBotUnits(player, catalog, random)
-    deployPlayerInPlace(player)
-  })
-}
-
-function recruitBotUnits(player, catalog, random) {
-  const unitTemplates = listUnitTemplates(catalog, player.factionId).sort((left, right) => left.cost - right.cost)
-  const cheapestUnitCost = unitTemplates[0]?.cost ?? null
-
-  if (!cheapestUnitCost) {
-    return
-  }
-
-  while (player.treasury >= cheapestUnitCost) {
-    const affordableUnits = unitTemplates.filter((template) => template.cost <= player.treasury)
-    const selectedTemplate = pickRandomEntry(affordableUnits, random)
-
-    if (!selectedTemplate) {
-      return
-    }
-
-    player.roster.push(createUnitEntity(catalog, selectedTemplate.id, player.id))
-    player.treasury -= selectedTemplate.cost
-  }
 }
 
 function applyFactionAssignment(player, catalog, factionId) {
@@ -441,19 +251,6 @@ function deployPlayerInPlace(player) {
     entity.components.formation.lane = laneOrder[index % laneOrder.length]
     Object.assign(entity.components.formation, createDefaultDeployment(entity.components.formation.row, entity.components.formation.lane))
   })
-}
-
-function pickRandomFactionId(catalog, random) {
-  return pickRandomEntry(catalog.factions, random)?.id ?? null
-}
-
-function pickRandomEntry(entries, random) {
-  if (entries.length === 0) {
-    return null
-  }
-
-  const index = Math.floor(random() * entries.length)
-  return entries[index]
 }
 
 function applyFormationSlot(entity, row, lane) {

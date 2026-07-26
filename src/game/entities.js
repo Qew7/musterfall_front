@@ -4,6 +4,15 @@ import { getFormationMetrics } from './formation'
 
 let entityCounter = 1
 
+export function syncEntityCounterFromCampaign(campaign) {
+  const maxId = (campaign?.players ?? [])
+    .flatMap((player) => player.roster ?? [])
+    .map((entity) => Number(String(entity.id).match(/\d+/)?.[0] ?? 0))
+    .reduce((highest, value) => Math.max(highest, value), 0)
+
+  entityCounter = Math.max(entityCounter, maxId)
+}
+
 export function createUnitEntity(catalog, templateId, ownerId) {
   const template = getTemplate(catalog, templateId)
   const maxHealth = template.models * template.modelHealth

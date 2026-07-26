@@ -57,19 +57,6 @@ export function isHeroLevelReady(hero) {
   return availableExperience >= getExperienceThreshold(hero)
 }
 
-export function rollHeroDraft(hero, catalog, random = Math.random) {
-  const blockedIds = new Set(hero.components.progression.pickedUpgradeIds)
-  const pool = catalog.heroUpgrades.filter((entry) => !blockedIds.has(entry.id))
-  const picks = []
-
-  while (picks.length < 3 && pool.length > 0) {
-    const index = Math.floor(random() * pool.length)
-    picks.push(pool.splice(index, 1)[0].id)
-  }
-
-  return picks
-}
-
 export function applyHeroUpgrade(hero, upgradeId) {
   const apply = upgradeEffects[upgradeId]
 

@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
-import { autoDeployPlayer, getRecruitmentOptions, recruitEntity } from '../../game/engine'
+import { getRecruitmentOptions } from '../../game/engine'
 import { TabBar } from '../TabBar'
 
-export function RecruitmentPanel({ campaign, catalog, selectedPlayer, setCampaign }) {
+export function RecruitmentPanel({ catalog, selectedPlayer, dispatchCommand }) {
   const recruitmentOptions = getRecruitmentOptions(catalog, selectedPlayer)
   const categoryTabs = useMemo(
     () => [
@@ -21,7 +21,11 @@ export function RecruitmentPanel({ campaign, catalog, selectedPlayer, setCampaig
           <p className="eyebrow">Припасы</p>
           <h2>{selectedPlayer.treasury}</h2>
         </div>
-        <button type="button" className="ghost-button" onClick={() => setCampaign(autoDeployPlayer(campaign, selectedPlayer.id))}>
+        <button
+          type="button"
+          className="ghost-button"
+          onClick={() => dispatchCommand({ type: 'deploy_auto', playerId: selectedPlayer.id })}
+        >
           Авторасставить
         </button>
       </div>
@@ -34,7 +38,11 @@ export function RecruitmentPanel({ campaign, catalog, selectedPlayer, setCampaig
             key={entry.id}
             type="button"
             className="shop-card"
-            onClick={() => setCampaign(recruitEntity(campaign, catalog, selectedPlayer.id, entry.id))}
+            onClick={() => dispatchCommand({
+              type: 'recruit',
+              playerId: selectedPlayer.id,
+              templateId: entry.id,
+            })}
           >
             <strong>{entry.name}</strong>
             <span>{entry.cost} припасов</span>

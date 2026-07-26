@@ -151,7 +151,3 @@ export function listHeroTemplates(catalog, factionId) {
 export function getHeroUpgrade(catalog, upgradeId) {
   return catalog.heroUpgradesById.get(upgradeId) ?? null
 }
-
-export function getAbility(catalog, abilityId) {
-  return catalog.abilitiesById.get(abilityId) ?? null
-}

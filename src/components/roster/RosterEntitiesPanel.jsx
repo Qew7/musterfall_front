@@ -1,11 +1,10 @@
 import { useMemo, useState } from 'react'
 import { getFacingLabel } from '../../game/battlefield'
-import { attachHero, dismissEntity, pickHeroDraft, prepareHeroDraft, rotateEntityOnBattlefield, toggleEntityReserve } from '../../game/engine'
 import { buildFormationLayout } from '../../game/formation'
 import { describeHero, getEntityCardData, getFactionPalette, getUpgradeSummary } from '../../game/selectors'
 import { TabBar } from '../TabBar'
 
-export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCampaign }) {
+export function RosterEntitiesPanel({ catalog, selectedPlayer, dispatchCommand }) {
   const entityTabs = useMemo(
     () => selectedPlayer.roster.map((entity) => ({
       id: entity.id,
@@ -68,7 +67,11 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
                 : `HP ${activeEntity.state.currentHealth}/${activeEntity.components.health.max}`}
             </p>
           </div>
-          <button type="button" className="dismiss-button" onClick={() => setCampaign(dismissEntity(campaign, selectedPlayer.id, activeEntity.id))}>
+          <button
+            type="button"
+            className="dismiss-button"
+            onClick={() => dispatchCommand({ type: 'dismiss', playerId: selectedPlayer.id, entityId: activeEntity.id })}
+          >
             Распустить
           </button>
         </div>
@@ -111,13 +114,25 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
         </div>
 
         <div className="entity-card__actions">
-          <button type="button" className="ghost-button" onClick={() => setCampaign(rotateEntityOnBattlefield(campaign, selectedPlayer.id, activeEntity.id, 'left'))}>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => dispatchCommand({ type: 'deploy_rotate', playerId: selectedPlayer.id, entityId: activeEntity.id, direction: 'left' })}
+          >
             Повернуть влево
           </button>
-          <button type="button" className="ghost-button" onClick={() => setCampaign(rotateEntityOnBattlefield(campaign, selectedPlayer.id, activeEntity.id, 'right'))}>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => dispatchCommand({ type: 'deploy_rotate', playerId: selectedPlayer.id, entityId: activeEntity.id, direction: 'right' })}
+          >
             Повернуть вправо
           </button>
-          <button type="button" className="ghost-button" onClick={() => setCampaign(toggleEntityReserve(campaign, selectedPlayer.id, activeEntity.id))}>
+          <button
+            type="button"
+            className="ghost-button"
+            onClick={() => dispatchCommand({ type: 'deploy_reserve', playerId: selectedPlayer.id, entityId: activeEntity.id })}
+          >
             {activeEntity.components.formation.row === 'reserve' ? 'Выставить' : 'В резерв'}
           </button>
           {activeEntity.kind === 'hero' && <span className="hero-copy">{describeHero(activeEntity)}</span>}
@@ -130,7 +145,12 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
                 key={unit.id}
                 type="button"
                 className={`attach-chip ${activeEntity.state.attachedTo === unit.id ? 'attach-chip--active' : ''}`}
-                onClick={() => setCampaign(attachHero(campaign, selectedPlayer.id, activeEntity.id, unit.id))}
+                onClick={() => dispatchCommand({
+                  type: 'attach_hero',
+                  playerId: selectedPlayer.id,
+                  heroId: activeEntity.id,
+                  unitId: unit.id,
+                })}
               >
                 {activeEntity.state.attachedTo === unit.id ? `В отряде ${unit.name}` : `Встроить в ${unit.name}`}
               </button>
@@ -139,7 +159,15 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
         )}
 
         {activeEntity.kind === 'hero' && data.canLevel && activeEntity.components.progression.pendingDraft.length === 0 && (
-          <button type="button" className="primary-button primary-button--small" onClick={() => setCampaign(prepareHeroDraft(campaign, catalog, selectedPlayer.id, activeEntity.id))}>
+          <button
+            type="button"
+            className="primary-button primary-button--small"
+            onClick={() => dispatchCommand({
+              type: 'prepare_hero_draft',
+              playerId: selectedPlayer.id,
+              heroId: activeEntity.id,
+            })}
+          >
             Открыть draft улучшений
           </button>
         )}
@@ -153,7 +181,12 @@ export function RosterEntitiesPanel({ campaign, catalog, selectedPlayer, setCamp
                   key={upgradeId}
                   type="button"
                   className="draft-card"
-                  onClick={() => setCampaign(pickHeroDraft(campaign, selectedPlayer.id, activeEntity.id, upgradeId))}
+                  onClick={() => dispatchCommand({
+                    type: 'pick_hero_draft',
+                    playerId: selectedPlayer.id,
+                    heroId: activeEntity.id,
+                    upgradeId,
+                  })}
                 >
                   <strong>{upgrade?.name}</strong>
                   <span>{upgrade?.category}</span>
