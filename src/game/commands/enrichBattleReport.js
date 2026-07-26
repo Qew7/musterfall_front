@@ -20,7 +20,7 @@ export function enrichCampaignBattles(campaign) {
       matchups: campaign.lastRoundReport.matchups.map((battle) => {
         const battleId = battle.battleId ?? `${battle.left?.playerId}-${battle.right?.playerId}-r${campaign.lastRoundReport.round}`
         const initialSnapshot = battle.initialSnapshot ?? []
-        const replay = battle.replay ?? projectBattleReplay({ battle, initialSnapshot })
+        const replay = projectBattleReplay({ battle, initialSnapshot })
         return {
           ...battle,
           battleId,

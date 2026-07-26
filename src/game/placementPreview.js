@@ -4,7 +4,9 @@ import {
   getShortestFacingDelta,
   getUnitCorners,
   getUnitDimensions,
+  getWheelPivot,
   rectanglesOverlap,
+  sampleWheelPoses,
 } from './battlefield'
 
 const ARC_SAMPLE_STEPS = 14
@@ -182,6 +184,31 @@ export function getPreviewOverlay({ origin, preview }) {
         })
       : null,
   }
+}
+
+/** SVG path of the unit center traveling around the wheel pivot (board coordinates). */
+export function buildCenterWheelArcPath(unit, delta) {
+  if (Math.abs(delta) < 0.05) {
+    return null
+  }
+
+  const pivot = getWheelPivot(unit, delta)
+  const samples = sampleWheelPoses(unit, delta, Math.max(6, Math.ceil(Math.abs(delta) / 12)))
+  if (samples.length < 2) {
+    return null
+  }
+
+  const boardPivot = toBoardPoint(pivot)
+  const start = toBoardPoint(samples[0])
+  const end = toBoardPoint(samples[samples.length - 1])
+  const radius = Math.hypot(start.x - boardPivot.x, start.y - boardPivot.y)
+  if (radius < 0.001) {
+    return null
+  }
+
+  const sweepFlag = delta >= 0 ? 1 : 0
+  const largeArcFlag = Math.abs(delta) > 180 ? 1 : 0
+  return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} ${sweepFlag} ${end.x} ${end.y}`
 }
 
 function getSectorPolygon(unit, startOffset, endOffset, radius) {

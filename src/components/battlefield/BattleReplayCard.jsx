@@ -17,16 +17,34 @@ export function BattleReplayCard({ battle, roundNumber, compact = false, onPlayb
       return undefined
     }
 
-    const timer = window.setInterval(() => {
-      setFrameIndex((current) => {
-        if (current >= frames.length - 1) return current
-        isFirstFrameRef.current = false
-        return current + 1
-      })
-    }, 1000)
+    let cancelled = false
+    let timerId = 0
+    let index = 0
 
-    return () => window.clearInterval(timer)
-  }, [frames.length])
+    const advance = () => {
+      if (cancelled || index >= frames.length - 1) {
+        return
+      }
+
+      const delay = frames[index]?.durationMs ?? 1000
+      timerId = window.setTimeout(() => {
+        if (cancelled) {
+          return
+        }
+        isFirstFrameRef.current = false
+        index += 1
+        setFrameIndex(index)
+        advance()
+      }, delay)
+    }
+
+    advance()
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timerId)
+    }
+  }, [frames, battle.battleId])
 
   const frame = frames[frameIndex] ?? { units: [], label: 'Нет кадров боя', summary: 'Replay не содержит кадров.', logEntries: [] }
   const isFinalFrame = frames.length === 0 || frameIndex >= frames.length - 1

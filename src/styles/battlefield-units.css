@@ -28,6 +28,14 @@
   transition: none;
 }
 
+/* WAAPI drives left/top along the wheel arc; keep facing/size CSS transitions. */
+.battlefield-unit-shell--pathing {
+  transition:
+    width 550ms cubic-bezier(0.4, 0, 0.2, 1),
+    height 550ms cubic-bezier(0.4, 0, 0.2, 1),
+    --facing 600ms ease-in-out;
+}
+
 .battlefield-unit-shell > .battlefield-unit {
   position: relative;
   inset: auto;

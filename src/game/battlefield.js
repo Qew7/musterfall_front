@@ -200,6 +200,47 @@ export function getFrontCenter(unit) {
   }
 }
 
+/** Front-right for positive (right) wheel, front-left for negative (left) wheel. */
+export function getWheelPivot(unit, delta) {
+  const corners = getUnitCorners(unit)
+  return delta < 0 ? corners[0] : corners[1]
+}
+
+/** Rotate unit center around the chosen front corner by delta degrees. */
+export function getWheelPose(unit, delta) {
+  if (Math.abs(delta) < 0.0001) {
+    return {
+      x: unit.x,
+      y: unit.y,
+      facing: normalizeFacing(unit.facing),
+    }
+  }
+
+  const pivot = getWheelPivot(unit, delta)
+  const radians = delta * (Math.PI / 180)
+  const cosA = Math.cos(radians)
+  const sinA = Math.sin(radians)
+  const vx = unit.x - pivot.x
+  const vy = unit.y - pivot.y
+
+  return {
+    x: pivot.x + vx * cosA - vy * sinA,
+    y: pivot.y + vx * sinA + vy * cosA,
+    facing: normalizeFacing(unit.facing + delta),
+  }
+}
+
+export function sampleWheelPoses(unit, delta, steps = 10) {
+  const samples = []
+  const count = Math.max(2, steps)
+
+  for (let index = 0; index <= count; index += 1) {
+    samples.push(getWheelPose(unit, (delta * index) / count))
+  }
+
+  return samples
+}
+
 export function rectanglesOverlap(left, right) {
   const axes = [...getSeparatingAxes(left), ...getSeparatingAxes(right)]
   return axes.every((axis) => {

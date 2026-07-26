@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { advanceContinuousFacing, battlefieldConfig, normalizeFacing } from '../../game/battlefield'
 import { buildFormationLayout } from '../../game/formation'
 import { getFacingZonePolygons, getFootprintGeometry } from '../../game/placementPreview'
@@ -26,6 +26,52 @@ export function BattlefieldBoard({
   const height = snapshot?.height ?? battlefieldConfig.height
   const units = snapshot?.units ?? []
   const facingContinuityRef = useRef({ targetById: new Map(), displayById: new Map() })
+  const shellRefs = useRef(new Map())
+  const pathingEntityIds = new Set(Object.keys(tacticalOverlay?.unitMotions ?? {}))
+
+  useLayoutEffect(() => {
+    const motions = tacticalOverlay?.unitMotions
+    if (!motions || instantUnits) {
+      return undefined
+    }
+
+    const animations = []
+
+    Object.entries(motions).forEach(([entityId, motion]) => {
+      const element = shellRefs.current.get(entityId)
+      const samples = motion?.samples
+      if (!element || !samples?.length) {
+        return
+      }
+
+      element.classList.add('battlefield-unit-shell--pathing')
+      const keyframes = samples.map((sample) => ({
+        left: `${((sample.x + 0.5) / width) * 100}%`,
+        top: `${((sample.y + 0.5) / height) * 100}%`,
+      }))
+
+      animations.push(
+        element.animate(keyframes, {
+          duration: motion.durationMs ?? 600,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          fill: 'forwards',
+        }),
+      )
+    })
+
+    return () => {
+      animations.forEach((animation) => {
+        try {
+          animation.commitStyles()
+        } catch {
+          // Older engines may not support commitStyles; cancel still clears the effect.
+        }
+        animation.cancel()
+      })
+      shellRefs.current.forEach((element) => element.classList.remove('battlefield-unit-shell--pathing'))
+    }
+  }, [overlayAnimKey, instantUnits, tacticalOverlay?.unitMotions, width, height])
+
   const cells = Array.from({ length: width * height }, (_, index) => {
     const x = index % width
     const y = Math.floor(index / width)
@@ -113,7 +159,9 @@ export function BattlefieldBoard({
             />
           )}
 
-          {tacticalOverlay?.wheelArc && <path className="battlefield-board__wheel" d={tacticalOverlay.wheelArc} />}
+          {(tacticalOverlay?.wheelArcs?.length ? tacticalOverlay.wheelArcs : tacticalOverlay?.wheelArc ? [tacticalOverlay.wheelArc] : []).map((arc, index) => (
+            <path key={`wheel-arc-${index}`} className="battlefield-board__wheel" d={arc} />
+          ))}
 
           {tacticalOverlay?.los && (
             <line
@@ -273,11 +321,19 @@ export function BattlefieldBoard({
             : ''
 
           const displayFacing = displayFacingById.get(unit.entityId) ?? normalizeFacing(unit.facing)
+          const isPathing = pathingEntityIds.has(unit.entityId)
 
           return (
             <div
               key={unit.entityId}
-              className={`battlefield-unit-shell${instantUnits ? ' battlefield-unit-shell--instant' : ''}`}
+              ref={(node) => {
+                if (node) {
+                  shellRefs.current.set(unit.entityId, node)
+                } else {
+                  shellRefs.current.delete(unit.entityId)
+                }
+              }}
+              className={`battlefield-unit-shell${instantUnits ? ' battlefield-unit-shell--instant' : ''}${isPathing ? ' battlefield-unit-shell--pathing' : ''}`}
               style={{ left: leftPercent, top: topPercent, width: widthPercent, height: heightPercent, '--facing': `${displayFacing}deg` }}
             >
               <button
