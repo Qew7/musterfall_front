@@ -70,56 +70,46 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
 }
 
 function pushMovementFrames(frames, { round, turn, phase, phaseIndex, previousUnits }) {
-  let currentUnits = previousUnits
+  const actions = phase.actions
+  const summaries = actions.map((action) => action.summary ?? summarizeAction(action, phase.type))
+  const details = actions.flatMap((action) => (
+    Array.isArray(action.details) && action.details.length > 0
+      ? action.details
+      : [action.summary ?? summarizeAction(action, phase.type)]
+  ))
   const base = {
     phaseType: 'movement',
     label: `Раунд ${round.number} · ${turn.playerName} · ${phase.label}`,
+    summary: summaries.join(' '),
+    logEntries: summaries,
+    devLogEntries: details,
   }
 
-  phase.actions.forEach((action, actionIndex) => {
-    const summary = action.summary ?? summarizeAction(action, phase.type)
-    const details = Array.isArray(action.details) && action.details.length > 0
-      ? action.details
-      : [summary]
-    const hasWheel = Math.abs(action.wheel?.delta ?? 0) > 0.05
-    const marchStart = hasWheel
-      ? { x: action.wheel.x, y: action.wheel.y, facing: action.wheel.facing }
-      : action.from
-    const hasMarch = Boolean(
-      marchStart
-      && action.to
-      && Math.hypot(action.to.x - marchStart.x, action.to.y - marchStart.y) > 0.05,
-    )
-    const frameMeta = {
-      ...base,
-      summary,
-      logEntries: [summary],
-      devLogEntries: details,
-    }
+  const wheeledActions = actions.filter((action) => Math.abs(action.wheel?.delta ?? 0) > 0.05)
+  let unitsAfterWheel = previousUnits
 
-    if (hasWheel) {
-      const wheelUnits = applyWheelWaypoints(currentUnits, [action])
-      frames.push({
-        ...frameMeta,
-        id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-${actionIndex}-wheel`,
-        units: wheelUnits,
-        overlay: buildMovementWheelOverlay([action], currentUnits),
-        durationMs: WHEEL_MOTION_DURATION_MS + 80,
-      })
-      currentUnits = wheelUnits
-      // Avoid duplicating the same summary on the march subframe.
-      frameMeta.logEntries = []
-      frameMeta.devLogEntries = []
-    }
-
+  if (wheeledActions.length > 0) {
+    unitsAfterWheel = applyWheelWaypoints(previousUnits, actions)
     frames.push({
-      ...frameMeta,
-      id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-${actionIndex}`,
-      units: action.snapshot,
-      overlay: hasMarch ? buildMovementMarchOverlay([action]) : null,
-      durationMs: hasMarch ? 1000 : hasWheel ? 220 : 700,
+      ...base,
+      id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-wheel`,
+      units: unitsAfterWheel,
+      overlay: buildMovementWheelOverlay(actions, previousUnits),
+      durationMs: WHEEL_MOTION_DURATION_MS + 80,
     })
-    currentUnits = action.snapshot ?? currentUnits
+  }
+
+  const marchOverlay = buildMovementMarchOverlay(actions)
+  const finalUnits = actions.at(-1)?.snapshot ?? unitsAfterWheel
+  frames.push({
+    ...base,
+    id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}`,
+    // Avoid duplicating the same log lines on the march subframe after a shared wheel.
+    logEntries: wheeledActions.length > 0 ? [] : summaries,
+    devLogEntries: wheeledActions.length > 0 ? [] : details,
+    units: finalUnits,
+    overlay: marchOverlay,
+    durationMs: marchOverlay ? 1000 : wheeledActions.length > 0 ? 220 : 700,
   })
 }
 
@@ -203,41 +193,45 @@ function buildMovementWheelOverlay(actions, previousUnits) {
 }
 
 function buildMovementMarchOverlay(actions) {
-  const marched = actions.find((action) => {
+  const unitMotions = {}
+  const paths = []
+  let activeUnitId = null
+
+  actions.forEach((action) => {
     if (!action.from || !action.to) {
-      return false
+      return
     }
-    if (action.wheel && Math.abs(action.wheel.delta) > 0.05) {
-      const wx = action.wheel.x - action.to.x
-      const wy = action.wheel.y - action.to.y
-      return Math.hypot(wx, wy) > 0.05
+
+    const start = action.wheel && Math.abs(action.wheel.delta) > 0.05
+      ? { x: action.wheel.x, y: action.wheel.y, facing: action.wheel.facing }
+      : action.from
+    const distance = Math.hypot(action.to.x - start.x, action.to.y - start.y)
+    if (distance <= 0.05) {
+      return
     }
-    return Math.hypot(action.to.x - action.from.x, action.to.y - action.from.y) > 0.05
+
+    unitMotions[action.actorId] = {
+      kind: 'march',
+      durationMs: 550,
+      samples: [
+        { x: start.x, y: start.y, facing: start.facing },
+        { x: action.to.x, y: action.to.y, facing: action.to.facing },
+      ],
+    }
+    paths.push({ start, end: action.to })
+    activeUnitId = action.actorId
   })
 
-  if (!marched) {
+  if (Object.keys(unitMotions).length === 0) {
     return null
   }
 
-  const start = marched.wheel && Math.abs(marched.wheel.delta) > 0.05
-    ? { x: marched.wheel.x, y: marched.wheel.y, facing: marched.wheel.facing }
-    : marched.from
-
   return {
-    activeUnitId: marched.actorId,
-    path: { start, end: marched.to },
+    activeUnitId,
+    path: paths[0] ?? null,
     wheelArc: null,
     wheelArcs: [],
-    unitMotions: {
-      [marched.actorId]: {
-        kind: 'march',
-        durationMs: 550,
-        samples: [
-          { x: start.x, y: start.y, facing: start.facing },
-          { x: marched.to.x, y: marched.to.y, facing: marched.to.facing },
-        ],
-      },
-    },
+    unitMotions,
     targetIds: [],
     affectedIds: [],
     blockedIds: [],
