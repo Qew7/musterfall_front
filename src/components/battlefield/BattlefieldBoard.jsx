@@ -1,5 +1,10 @@
 import { useLayoutEffect, useRef } from 'react'
-import { advanceContinuousFacing, battlefieldConfig, normalizeFacing } from '../../game/battlefield'
+import {
+  advanceContinuousFacing,
+  battlefieldConfig,
+  buildSyncedMotionKeyframes,
+  normalizeFacing,
+} from '../../game/battlefield'
 import { buildFormationLayout } from '../../game/formation'
 import { getFacingZonePolygons, getFootprintGeometry } from '../../game/placementPreview'
 
@@ -34,45 +39,70 @@ export function BattlefieldBoard({
   motionsRef.current = tacticalOverlay?.unitMotions
   const pathingEntityIds = new Set(Object.keys(tacticalOverlay?.unitMotions ?? {}))
 
-  // Position motion via WAAPI. Avoid commitStyles on cleanup: it runs after the next
-  // frame's React styles and freezes units at the previous pose → visual teleports.
+  // Pose motion via WAAPI (left/top/--facing together). Avoid commitStyles on cleanup:
+  // it runs after the next frame's React styles and freezes units at the previous pose.
   useLayoutEffect(() => {
     const frameUnits = unitsRef.current
     const motions = motionsRef.current ?? {}
     const animations = []
+    const { displayById, targetById } = facingContinuityRef.current
 
-    const poseOf = (unit) => ({
+    const poseOf = (unit, facingDeg) => ({
       left: `${((unit.x + 0.5) / width) * 100}%`,
       top: `${((unit.y + 0.5) / height) * 100}%`,
+      facing: facingDeg,
+      '--facing': `${facingDeg}deg`,
     })
 
     frameUnits.forEach((unit) => {
       const element = shellRefs.current.get(unit.entityId)
-      const next = poseOf(unit)
       const prev = prevBoardPoseByIdRef.current.get(unit.entityId)
+      const nextFacing = advanceContinuousFacing(prev?.facing, unit.facing, { snap: instantUnits || !prev })
+      const next = poseOf(unit, nextFacing)
       prevBoardPoseByIdRef.current.set(unit.entityId, next)
 
       if (!element || instantUnits || !prev) {
+        displayById.set(unit.entityId, nextFacing)
+        targetById.set(unit.entityId, normalizeFacing(unit.facing))
         return
       }
 
       const motion = motions[unit.entityId]
-      const keyframes = motion?.samples?.length
-        ? motion.samples.map((sample) => ({
-            left: `${((sample.x + 0.5) / width) * 100}%`,
-            top: `${((sample.y + 0.5) / height) * 100}%`,
-          }))
-        : (prev.left !== next.left || prev.top !== next.top)
-          ? [prev, next]
-          : null
+      let keyframes = null
 
-      if (!keyframes) {
+      if (motion?.samples?.length) {
+        keyframes = buildSyncedMotionKeyframes(motion.samples, {
+          width,
+          height,
+          startFacing: prev.facing,
+        })
+        const finalFacing = keyframes.at(-1)?.facing
+        if (finalFacing != null) {
+          next.facing = finalFacing
+          next['--facing'] = `${finalFacing}deg`
+          prevBoardPoseByIdRef.current.set(unit.entityId, next)
+          displayById.set(unit.entityId, finalFacing)
+          targetById.set(unit.entityId, normalizeFacing(unit.facing))
+        }
+      } else if (prev.left !== next.left || prev.top !== next.top || prev.facing !== next.facing) {
+        keyframes = [prev, next]
+        displayById.set(unit.entityId, nextFacing)
+        targetById.set(unit.entityId, normalizeFacing(unit.facing))
+      }
+
+      if (!keyframes?.length) {
         return
       }
 
+      const cssKeyframes = keyframes.map((frame) => ({
+        left: frame.left,
+        top: frame.top,
+        ...(frame['--facing'] != null ? { '--facing': frame['--facing'] } : {}),
+      }))
+
       element.classList.add('battlefield-unit-shell--pathing')
       animations.push(
-        element.animate(keyframes, {
+        element.animate(cssKeyframes, {
           duration: motion?.durationMs ?? 550,
           easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
           fill: 'none',

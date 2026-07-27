@@ -241,6 +241,31 @@ export function sampleWheelPoses(unit, delta, steps = 10) {
   return samples
 }
 
+/** WAAPI keyframes: center + continuous facing from the same sample timeline (rigid wheel). */
+export function buildSyncedMotionKeyframes(samples, { width, height, startFacing } = {}) {
+  if (!samples?.length || !width || !height) {
+    return []
+  }
+
+  let facingCursor = startFacing
+  if (facingCursor == null) {
+    facingCursor = samples[0].facing ?? 0
+  }
+
+  return samples.map((sample) => {
+    if (sample.facing != null) {
+      facingCursor = advanceContinuousFacing(facingCursor, sample.facing)
+    }
+
+    return {
+      left: `${((sample.x + 0.5) / width) * 100}%`,
+      top: `${((sample.y + 0.5) / height) * 100}%`,
+      facing: facingCursor,
+      '--facing': `${facingCursor}deg`,
+    }
+  })
+}
+
 export function rectanglesOverlap(left, right) {
   const axes = [...getSeparatingAxes(left), ...getSeparatingAxes(right)]
   return axes.every((axis) => {
