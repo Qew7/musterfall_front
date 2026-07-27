@@ -321,6 +321,16 @@ function projectTemplate(template) {
     }
   }
 
+  if (template.shape === 'polygon' && Array.isArray(template.points)) {
+    return {
+      ...template,
+      polygon: template.points.map((point) => ({
+        x: point.x + 0.5,
+        y: point.y + 0.5,
+      })),
+    }
+  }
+
   return template
 }
 

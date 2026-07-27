@@ -21,6 +21,8 @@ export function BattlefieldBoard({
   interactiveZone = null,
   previewPlacement = null,
   tacticalOverlay = null,
+  allySideKey = 'left',
+  flipBoard = false,
   showFacingZones = true,
   showCornerMarkers = true,
   phaseType = null,
@@ -171,6 +173,7 @@ export function BattlefieldBoard({
     >
       <div className="battlefield-board__surface" onPointerUp={() => onSurfacePointerUp?.()}>
         <svg className="battlefield-board__overlay" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+          <g transform={flipBoard ? `translate(${width} ${height}) scale(-1 -1)` : undefined}>
           {selectedZones && (
             <>
               <polygon className="battlefield-board__zone battlefield-board__zone--front" points={selectedZones.front.map((point) => `${point.x},${point.y}`).join(' ')} />
@@ -308,6 +311,14 @@ export function BattlefieldBoard({
               points={tacticalOverlay.template.polygon.map((point) => `${point.x},${point.y}`).join(' ')}
             />
           )}
+
+          {(tacticalOverlay?.template?.shape === 'polygon' && tacticalOverlay.template.polygon) && (
+            <polygon
+              className="battlefield-board__template battlefield-board__template--breath"
+              points={tacticalOverlay.template.polygon.map((point) => `${point.x},${point.y}`).join(' ')}
+            />
+          )}
+          </g>
         </svg>
 
         {cells.map((cell) => {
@@ -369,7 +380,7 @@ export function BattlefieldBoard({
           const leftPercent = `${((unit.x + 0.5) / width) * 100}%`
           const topPercent = `${((unit.y + 0.5) / height) * 100}%`
           const isSelected = unit.entityId === selectedUnitId
-          const toneClass = unit.sideKey === 'right' ? 'battlefield-unit--enemy' : 'battlefield-unit--ally'
+          const toneClass = unit.sideKey === allySideKey ? 'battlefield-unit--ally' : 'battlefield-unit--enemy'
           const isTarget = tacticalOverlay?.targetIds?.includes(unit.entityId)
           const isAffected = tacticalOverlay?.affectedIds?.includes(unit.entityId)
           const isBlocked = tacticalOverlay?.blockedIds?.includes(unit.entityId)

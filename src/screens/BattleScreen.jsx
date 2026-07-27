@@ -102,6 +102,7 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
             battle={activeBattle}
             roundNumber={campaign.lastRoundReport.round}
             compact
+            focusPlayerId={activeContextTab === 'own' ? focusPlayerId : null}
             onPlaybackProgress={handlePlaybackProgress}
             continueLabel={campaign.winnerId ? 'В меню' : 'К следующему набору'}
             onContinue={showChampionModal ? undefined : onContinue}

@@ -1,10 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  localBoardSide,
+  projectOverlayToViewer,
+  projectUnitsToViewer,
+  shouldFlipForViewer,
+} from '../../game/battle/viewerFrame'
 import { BattlefieldBoard } from './BattlefieldBoard'
 
 export function BattleReplayCard({
   battle,
   roundNumber,
   compact = false,
+  focusPlayerId = null,
   onPlaybackProgress,
   continueLabel,
   onContinue,
@@ -56,14 +63,23 @@ export function BattleReplayCard({
   const frame = frames[frameIndex] ?? { units: [], label: 'Нет кадров боя', summary: 'Replay не содержит кадров.', logEntries: [], devLogEntries: [] }
   const isFinalFrame = frames.length === 0 || frameIndex >= frames.length - 1
   const battleTitle = `${battle.left.playerName} vs ${battle.right.playerName}`
-  const sideColors = {
-    left: battle.left?.faction?.color,
-    right: battle.right?.faction?.color,
-  }
-  const frameUnits = (frame.units ?? []).map((unit) => ({
-    ...unit,
-    factionColor: sideColors[unit.sideKey] ?? unit.factionColor,
-  }))
+  const localSide = localBoardSide(battle, focusPlayerId)
+  const flipBoard = shouldFlipForViewer(localSide)
+  const allySideKey = localSide ?? 'left'
+  const leftFactionColor = battle.left?.faction?.color
+  const rightFactionColor = battle.right?.faction?.color
+  const frameUnits = useMemo(() => {
+    const sideColors = { left: leftFactionColor, right: rightFactionColor }
+    const colored = (frame.units ?? []).map((unit) => ({
+      ...unit,
+      factionColor: sideColors[unit.sideKey] ?? unit.factionColor,
+    }))
+    return projectUnitsToViewer(colored, flipBoard)
+  }, [frame.units, flipBoard, leftFactionColor, rightFactionColor])
+  const tacticalOverlay = useMemo(
+    () => projectOverlayToViewer(frame.overlay ?? null, flipBoard),
+    [frame.overlay, flipBoard],
+  )
   const progressiveLog = frames.length > 0
     ? frames
         .slice(0, frameIndex + 1)
@@ -118,9 +134,12 @@ export function BattleReplayCard({
 
       <div className="battle-card__body">
         <BattlefieldBoard
+          key={`${battle.battleId}-${flipBoard ? 'flip' : 'world'}`}
           snapshot={{ units: frameUnits }}
-          selectedUnitId={frame.overlay?.activeUnitId ?? null}
-          tacticalOverlay={frame.overlay ?? null}
+          selectedUnitId={tacticalOverlay?.activeUnitId ?? frame.overlay?.activeUnitId ?? null}
+          tacticalOverlay={tacticalOverlay}
+          allySideKey={allySideKey}
+          flipBoard={flipBoard}
           showFacingZones={false}
           showCornerMarkers={false}
           phaseType={frame.phaseType ?? null}
