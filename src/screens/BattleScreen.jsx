@@ -51,6 +51,7 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
   }, [campaign.lastRoundReport.round])
 
   const allBattlesCompleted = matchups.length === 0 || matchups.every((battle) => completedBattleIds.has(battle.battleId))
+  const showChampionModal = Boolean(champion) && allBattlesCompleted
 
   function handlePlaybackProgress(battleId, isFinalFrame) {
     if (!isFinalFrame) {
@@ -103,17 +104,23 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
             compact
             onPlaybackProgress={handlePlaybackProgress}
             continueLabel={campaign.winnerId ? 'В меню' : 'К следующему набору'}
-            onContinue={onContinue}
+            onContinue={showChampionModal ? undefined : onContinue}
           />
         )}
       </section>
 
-      {champion && allBattlesCompleted && (
-        <article className="champion-card champion-card--final">
-          <p className="eyebrow">Финал кампании</p>
-          <strong>{champion.name}</strong>
-          <p>{championFactionName} пережил всех и получает мета-награду.</p>
-        </article>
+      {showChampionModal && (
+        <div className="champion-modal" role="dialog" aria-modal="true" aria-labelledby="champion-modal-title">
+          <div className="champion-modal__backdrop" />
+          <article className="champion-card champion-card--final">
+            <p className="eyebrow">Финал кампании</p>
+            <strong id="champion-modal-title">{champion.name}</strong>
+            <p>{championFactionName} пережил всех и получает мета-награду.</p>
+            <button type="button" className="primary-button" onClick={onContinue}>
+              На главный экран
+            </button>
+          </article>
+        </div>
       )}
     </section>
   )
