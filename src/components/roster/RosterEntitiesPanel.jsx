@@ -54,7 +54,6 @@ export function RosterEntitiesPanel({ catalog, selectedPlayer, dispatchCommand }
         activeId={activeEntity.id}
         onChange={setActiveEntityId}
         ariaLabel="Сущности в строю"
-        className="tab-bar--compact"
       />
 
       <article className="entity-card" style={{ '--accent-color': factionColor }}>

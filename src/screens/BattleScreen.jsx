@@ -75,7 +75,6 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
         activeId={activeContextTab}
         onChange={setActiveContextTab}
         ariaLabel="Контекст боя"
-        className="tab-bar--dense"
       />
 
       {battleTabs.length > 1 && (
@@ -84,7 +83,6 @@ export function BattleScreen({ campaign, champion, championFactionName, focusPla
           activeId={activeBattle?.battleId ?? battleTabs[0].id}
           onChange={setActiveBattleId}
           ariaLabel="Матч"
-          className="tab-bar--compact tab-bar--dense"
         />
       )}
 

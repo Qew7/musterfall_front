@@ -30,7 +30,7 @@ export function RecruitmentPanel({ catalog, selectedPlayer, dispatchCommand }) {
         </button>
       </div>
 
-      <TabBar tabs={categoryTabs} activeId={activeCategory} onChange={setActiveCategory} ariaLabel="Категория найма" className="tab-bar--compact" />
+      <TabBar tabs={categoryTabs} activeId={activeCategory} onChange={setActiveCategory} ariaLabel="Категория найма" />
 
       <div className="market-grid">
         {entries.map((entry) => (

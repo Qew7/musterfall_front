@@ -15,7 +15,6 @@ export function TabBar({ tabs, activeId, onChange, ariaLabel = 'Tabs', className
             disabled={Boolean(tab.disabled)}
           >
             <strong>{tab.label}</strong>
-            {tab.meta && <small>{tab.meta}</small>}
           </button>
         )
       })}

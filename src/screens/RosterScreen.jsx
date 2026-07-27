@@ -33,14 +33,12 @@ export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer,
         activeId={selectedPlayer.id}
         onChange={onSelectPlayer}
         ariaLabel="Игроки"
-        className={isFormation ? 'tab-bar--dense' : ''}
       />
       <TabBar
         tabs={prepTabs}
         activeId={activePrepTab}
         onChange={setActivePrepTab}
         ariaLabel="Подготовка"
-        className={`tab-bar--compact ${isFormation ? 'tab-bar--dense' : ''}`.trim()}
       />
 
       <section className="screen-body">
