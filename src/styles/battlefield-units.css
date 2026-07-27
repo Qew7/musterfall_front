@@ -52,7 +52,6 @@
 .battlefield-unit__base {
   position: absolute;
   inset: 0;
-  border-radius: 12px;
   overflow: hidden;
   transform: rotate(calc(var(--facing) + 90deg));
   transform-origin: center center;
@@ -142,7 +141,6 @@
 .battlefield-unit__model {
   position: absolute;
   display: block;
-  border-radius: 4px;
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--model-color, #6a4a35) 68%, #ffffff 32%),
@@ -167,15 +165,6 @@
   border-radius: 999px;
   background: rgba(118, 33, 13, 0.95);
   box-shadow: 0 0 0 1px rgba(255, 248, 222, 0.85);
-}
-
-.battlefield-unit__model--cavalry {
-  border-radius: 6px;
-}
-
-.battlefield-unit__model--monster,
-.battlefield-unit__model--machine {
-  border-radius: 8px;
 }
 
 .battlefield-unit__face {
