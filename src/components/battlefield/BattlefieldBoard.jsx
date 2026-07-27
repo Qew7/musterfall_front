@@ -27,50 +27,70 @@ export function BattlefieldBoard({
   const units = snapshot?.units ?? []
   const facingContinuityRef = useRef({ targetById: new Map(), displayById: new Map() })
   const shellRefs = useRef(new Map())
+  const prevBoardPoseByIdRef = useRef(new Map())
+  const unitsRef = useRef(units)
+  const motionsRef = useRef(tacticalOverlay?.unitMotions)
+  unitsRef.current = units
+  motionsRef.current = tacticalOverlay?.unitMotions
   const pathingEntityIds = new Set(Object.keys(tacticalOverlay?.unitMotions ?? {}))
 
+  // Position motion via WAAPI. Avoid commitStyles on cleanup: it runs after the next
+  // frame's React styles and freezes units at the previous pose → visual teleports.
   useLayoutEffect(() => {
-    const motions = tacticalOverlay?.unitMotions
-    if (!motions || instantUnits) {
-      return undefined
-    }
-
+    const frameUnits = unitsRef.current
+    const motions = motionsRef.current ?? {}
     const animations = []
 
-    Object.entries(motions).forEach(([entityId, motion]) => {
-      const element = shellRefs.current.get(entityId)
-      const samples = motion?.samples
-      if (!element || !samples?.length) {
+    const poseOf = (unit) => ({
+      left: `${((unit.x + 0.5) / width) * 100}%`,
+      top: `${((unit.y + 0.5) / height) * 100}%`,
+    })
+
+    frameUnits.forEach((unit) => {
+      const element = shellRefs.current.get(unit.entityId)
+      const next = poseOf(unit)
+      const prev = prevBoardPoseByIdRef.current.get(unit.entityId)
+      prevBoardPoseByIdRef.current.set(unit.entityId, next)
+
+      if (!element || instantUnits || !prev) {
+        return
+      }
+
+      const motion = motions[unit.entityId]
+      const keyframes = motion?.samples?.length
+        ? motion.samples.map((sample) => ({
+            left: `${((sample.x + 0.5) / width) * 100}%`,
+            top: `${((sample.y + 0.5) / height) * 100}%`,
+          }))
+        : (prev.left !== next.left || prev.top !== next.top)
+          ? [prev, next]
+          : null
+
+      if (!keyframes) {
         return
       }
 
       element.classList.add('battlefield-unit-shell--pathing')
-      const keyframes = samples.map((sample) => ({
-        left: `${((sample.x + 0.5) / width) * 100}%`,
-        top: `${((sample.y + 0.5) / height) * 100}%`,
-      }))
-
       animations.push(
         element.animate(keyframes, {
-          duration: motion.durationMs ?? 600,
+          duration: motion?.durationMs ?? 550,
           easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-          fill: 'forwards',
+          fill: 'none',
         }),
       )
     })
 
+    for (const entityId of [...prevBoardPoseByIdRef.current.keys()]) {
+      if (!frameUnits.some((unit) => unit.entityId === entityId)) {
+        prevBoardPoseByIdRef.current.delete(entityId)
+      }
+    }
+
     return () => {
-      animations.forEach((animation) => {
-        try {
-          animation.commitStyles()
-        } catch {
-          // Older engines may not support commitStyles; cancel still clears the effect.
-        }
-        animation.cancel()
-      })
+      animations.forEach((animation) => animation.cancel())
       shellRefs.current.forEach((element) => element.classList.remove('battlefield-unit-shell--pathing'))
     }
-  }, [overlayAnimKey, instantUnits, tacticalOverlay?.unitMotions, width, height])
+  }, [overlayAnimKey, instantUnits, width, height])
 
   const cells = Array.from({ length: width * height }, (_, index) => {
     const x = index % width

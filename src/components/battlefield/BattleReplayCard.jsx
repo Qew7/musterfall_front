@@ -53,7 +53,7 @@ export function BattleReplayCard({
     }
   }, [frames, battle.battleId])
 
-  const frame = frames[frameIndex] ?? { units: [], label: 'Нет кадров боя', summary: 'Replay не содержит кадров.', logEntries: [] }
+  const frame = frames[frameIndex] ?? { units: [], label: 'Нет кадров боя', summary: 'Replay не содержит кадров.', logEntries: [], devLogEntries: [] }
   const isFinalFrame = frames.length === 0 || frameIndex >= frames.length - 1
   const battleTitle = `${battle.left.playerName} vs ${battle.right.playerName}`
   const sideColors = {
@@ -67,12 +67,29 @@ export function BattleReplayCard({
   const progressiveLog = frames.length > 0
     ? frames
         .slice(0, frameIndex + 1)
-        .map((entry, index) => {
-          const item = entry.logEntries?.find((logLine) => Boolean(logLine)) ?? entry.summary ?? `Кадр ${index + 1}`
-          return { id: `${entry.id ?? index}`, text: item, frameNumber: index + 1 }
+        .flatMap((entry, index) => {
+          const lines = (entry.logEntries?.length ? entry.logEntries : [entry.summary]).filter(Boolean)
+          return lines.map((text, lineIndex) => ({
+            id: `${entry.id ?? index}-${lineIndex}`,
+            text,
+            frameNumber: index + 1,
+          }))
         })
         .reverse()
     : battle.events.slice(0, compact ? 6 : 24).map((item, index) => ({ id: `fallback-${index}`, text: item, frameNumber: index + 1 }))
+  const progressiveDevLog = frames.length > 0
+    ? frames
+        .slice(0, frameIndex + 1)
+        .flatMap((entry, index) => {
+          const lines = (entry.devLogEntries?.length ? entry.devLogEntries : entry.logEntries ?? [entry.summary]).filter(Boolean)
+          return lines.map((text, lineIndex) => ({
+            id: `dev-${entry.id ?? index}-${lineIndex}`,
+            text,
+            frameNumber: index + 1,
+          }))
+        })
+        .reverse()
+    : []
 
   useEffect(() => {
     onPlaybackProgress?.(battle.battleId, isFinalFrame)
@@ -119,7 +136,7 @@ export function BattleReplayCard({
 
           <div className="battle-log">
             <div className="battle-log__title-row">
-              <strong>Логи боя</strong>
+              <strong>Лог боя</strong>
               <span>{progressiveLog.length}</span>
             </div>
             {progressiveLog.map((entry) => (
@@ -129,6 +146,21 @@ export function BattleReplayCard({
               </p>
             ))}
           </div>
+
+          {!compact && progressiveDevLog.length > 0 && (
+            <div className="battle-log battle-log--dev">
+              <div className="battle-log__title-row">
+                <strong>Лог разработки</strong>
+                <span>{progressiveDevLog.length}</span>
+              </div>
+              {progressiveDevLog.map((entry) => (
+                <p key={`${battle.battleId}-${entry.id}`} className="battle-log__item battle-log__item--dev">
+                  <span className="battle-log__index">{entry.frameNumber}</span>
+                  <span>{entry.text}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </aside>
       </div>
     </article>

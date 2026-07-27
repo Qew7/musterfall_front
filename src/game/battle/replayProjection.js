@@ -28,6 +28,7 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
             label: `Раунд ${round.number} · ${turn.playerName} · ${phase.label}`,
             summary: phase.events[0] ?? 'Фаза без результата.',
             logEntries: phase.events,
+            devLogEntries: phase.events,
             units: phase.snapshot ?? frames.at(-1)?.units ?? initialSnapshot,
             overlay: null,
             durationMs: 1000,
@@ -48,12 +49,14 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
 
         // Атаки (melee, shooting, magic): каждое действие — отдельный кадр, поочередно
         phase.actions.forEach((action, actionIndex) => {
+          const summary = action.summary ?? summarizeAction(action, phase.type)
           frames.push({
             id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-${actionIndex}`,
             phaseType: phase.type,
             label: `Раунд ${round.number} · ${turn.playerName} · ${phase.label}`,
-            summary: action.summary ?? summarizeAction(action, phase.type),
-            logEntries: [action.summary ?? summarizeAction(action, phase.type)],
+            summary,
+            logEntries: [summary],
+            devLogEntries: Array.isArray(action.details) && action.details.length > 0 ? action.details : [summary],
             units: action.snapshot,
             overlay: projectActionOverlay(action, action.snapshot),
             durationMs: 1000,
@@ -67,33 +70,56 @@ export function projectBattleReplay({ battle, initialSnapshot }) {
 }
 
 function pushMovementFrames(frames, { round, turn, phase, phaseIndex, previousUnits }) {
-  const lastAction = phase.actions.at(-1)
-  const summaries = phase.actions.map((action) => action.summary ?? summarizeAction(action, phase.type))
-  const wheeledActions = phase.actions.filter((action) => Math.abs(action.wheel?.delta ?? 0) > 0.05)
+  let currentUnits = previousUnits
   const base = {
     phaseType: 'movement',
     label: `Раунд ${round.number} · ${turn.playerName} · ${phase.label}`,
-    summary: summaries.join(' '),
-    logEntries: summaries,
   }
 
-  if (wheeledActions.length > 0) {
-    const wheelUnits = applyWheelWaypoints(previousUnits, phase.actions)
-    frames.push({
+  phase.actions.forEach((action, actionIndex) => {
+    const summary = action.summary ?? summarizeAction(action, phase.type)
+    const details = Array.isArray(action.details) && action.details.length > 0
+      ? action.details
+      : [summary]
+    const hasWheel = Math.abs(action.wheel?.delta ?? 0) > 0.05
+    const marchStart = hasWheel
+      ? { x: action.wheel.x, y: action.wheel.y, facing: action.wheel.facing }
+      : action.from
+    const hasMarch = Boolean(
+      marchStart
+      && action.to
+      && Math.hypot(action.to.x - marchStart.x, action.to.y - marchStart.y) > 0.05,
+    )
+    const frameMeta = {
       ...base,
-      id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-wheel`,
-      units: wheelUnits,
-      overlay: buildMovementWheelOverlay(phase.actions, previousUnits),
-      durationMs: WHEEL_MOTION_DURATION_MS + 80,
-    })
-  }
+      summary,
+      logEntries: [summary],
+      devLogEntries: details,
+    }
 
-  frames.push({
-    ...base,
-    id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}`,
-    units: lastAction.snapshot,
-    overlay: buildMovementMarchOverlay(phase.actions),
-    durationMs: 1000,
+    if (hasWheel) {
+      const wheelUnits = applyWheelWaypoints(currentUnits, [action])
+      frames.push({
+        ...frameMeta,
+        id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-${actionIndex}-wheel`,
+        units: wheelUnits,
+        overlay: buildMovementWheelOverlay([action], currentUnits),
+        durationMs: WHEEL_MOTION_DURATION_MS + 80,
+      })
+      currentUnits = wheelUnits
+      // Avoid duplicating the same summary on the march subframe.
+      frameMeta.logEntries = []
+      frameMeta.devLogEntries = []
+    }
+
+    frames.push({
+      ...frameMeta,
+      id: `${round.number}-${turn.playerId}-${phase.type}-${phaseIndex}-${actionIndex}`,
+      units: action.snapshot,
+      overlay: hasMarch ? buildMovementMarchOverlay([action]) : null,
+      durationMs: hasMarch ? 1000 : hasWheel ? 220 : 700,
+    })
+    currentUnits = action.snapshot ?? currentUnits
   })
 }
 
@@ -202,7 +228,16 @@ function buildMovementMarchOverlay(actions) {
     path: { start, end: marched.to },
     wheelArc: null,
     wheelArcs: [],
-    unitMotions: null,
+    unitMotions: {
+      [marched.actorId]: {
+        kind: 'march',
+        durationMs: 550,
+        samples: [
+          { x: start.x, y: start.y, facing: start.facing },
+          { x: marched.to.x, y: marched.to.y, facing: marched.to.facing },
+        ],
+      },
+    },
     targetIds: [],
     affectedIds: [],
     blockedIds: [],
@@ -239,24 +274,6 @@ function projectActionOverlay(action, units) {
   const unitById = new Map(units.map((unit) => [unit.entityId, unit]))
   const actor = unitById.get(action.actorId)
   const target = action.targetId ? unitById.get(action.targetId) : null
-
-  if (action.type === 'movement') {
-    return {
-      activeUnitId: action.actorId,
-      path: { start: action.from, end: action.to },
-      wheelArc: getPreviewOverlay({
-        origin: { ...action.from, baseWidth: actor?.baseWidth ?? 1, baseDepth: actor?.baseDepth ?? 1 },
-        preview: { ...action.to, baseWidth: actor?.baseWidth ?? 1, baseDepth: actor?.baseDepth ?? 1 },
-      })?.wheelArc ?? null,
-      targetIds: [],
-      affectedIds: [],
-      blockedIds: [],
-      template: null,
-      contactVector: null,
-      contactTargetId: null,
-      los: null,
-    }
-  }
 
   const chargeOrigin = action.charge
     ? {

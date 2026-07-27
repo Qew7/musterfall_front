@@ -101,7 +101,10 @@ export function getPlacementDiagnostics({
 }) {
   const bounds = getBoardBounds(boardWidth, boardHeight, interactiveZone)
   const corners = getUnitCorners(candidate)
-  const overlapUnits = units.filter((unit) => unit.entityId !== ignoreEntityId && unit.entityId !== candidate.entityId && rectanglesOverlap(candidate, unit))
+  const packedUnits = units.filter((unit) => {
+    if (unit.entityId === ignoreEntityId || unit.entityId === candidate.entityId) return false
+    return footprintsTooClose(candidate, unit)
+  })
   const outOfBounds = corners.some((corner) => corner.x < bounds.minX || corner.x > bounds.maxX || corner.y < bounds.minY || corner.y > bounds.maxY)
   const reasons = []
 
@@ -109,16 +112,36 @@ export function getPlacementDiagnostics({
     reasons.push(interactiveZone ? 'Footprint выходит за пределы deployment zone.' : 'Footprint выходит за границы поля.')
   }
 
-  if (overlapUnits.length > 0) {
-    reasons.push(`Footprint перекрывает ${overlapUnits.map((unit) => unit.name).join(', ')}.`)
+  if (packedUnits.length > 0) {
+    reasons.push(`Слишком близко к ${packedUnits.map((unit) => unit.name).join(', ')}.`)
   }
 
   return {
     isLegal: reasons.length === 0,
-    overlapUnits,
+    overlapUnits: packedUnits,
     outOfBounds,
     reasons,
   }
+}
+
+/** True when footprints overlap or sit closer than melee contact tolerance. */
+function footprintsTooClose(left, right, minSeparation = battlefieldConfig.meleeContactTolerance) {
+  const pad = minSeparation
+  const inflatedLeft = {
+    ...left,
+    baseWidth: (left.baseWidth ?? left.width ?? 0) + pad,
+    baseDepth: (left.baseDepth ?? left.depth ?? 0) + pad,
+    width: (left.baseWidth ?? left.width ?? 0) + pad,
+    depth: (left.baseDepth ?? left.depth ?? 0) + pad,
+  }
+  const inflatedRight = {
+    ...right,
+    baseWidth: (right.baseWidth ?? right.width ?? 0) + pad,
+    baseDepth: (right.baseDepth ?? right.depth ?? 0) + pad,
+    width: (right.baseWidth ?? right.width ?? 0) + pad,
+    depth: (right.baseDepth ?? right.depth ?? 0) + pad,
+  }
+  return rectanglesOverlap(inflatedLeft, inflatedRight)
 }
 
 export function getWheelSweepDiagnostics({
