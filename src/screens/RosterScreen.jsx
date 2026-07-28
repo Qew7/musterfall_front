@@ -59,6 +59,7 @@ export function RosterScreen({ campaign, catalog, activePlayers, selectedPlayer,
             isBusy={isBusy}
             onNextPreparation={onNextPreparation}
             onBeginRound={onBeginRound}
+            terrain={campaign.terrain ?? []}
           />
         )}
       </section>

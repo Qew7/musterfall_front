@@ -136,6 +136,7 @@ export function BattleReplayCard({
         <BattlefieldBoard
           key={`${battle.battleId}-${flipBoard ? 'flip' : 'world'}`}
           snapshot={{ units: frameUnits }}
+          terrain={battle.terrain ?? []}
           selectedUnitId={tacticalOverlay?.activeUnitId ?? frame.overlay?.activeUnitId ?? null}
           tacticalOverlay={tacticalOverlay}
           allySideKey={allySideKey}

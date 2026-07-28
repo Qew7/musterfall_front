@@ -14,6 +14,7 @@ export function FormationBoard({
   isBusy = false,
   onNextPreparation,
   onBeginRound,
+  terrain = [],
 }) {
   const movableEntities = useMemo(() => {
     return selectedPlayer.roster.filter((entity) => !(entity.kind === 'hero' && entity.state.attachedTo))
@@ -207,6 +208,7 @@ export function FormationBoard({
 
       <BattlefieldBoard
         snapshot={snapshot}
+        terrain={terrain}
         selectedUnitId={selectedEntity?.id ?? null}
         onSelectUnit={setSelectedEntityId}
         onCellClick={(x, y) => {

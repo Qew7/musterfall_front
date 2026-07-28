@@ -28,10 +28,12 @@ export function BattlefieldBoard({
   phaseType = null,
   overlayAnimKey = null,
   instantUnits = false,
+  terrain = null,
 }) {
   const width = snapshot?.width ?? battlefieldConfig.width
   const height = snapshot?.height ?? battlefieldConfig.height
   const units = snapshot?.units ?? []
+  const terrainFeatures = terrain ?? snapshot?.terrain ?? []
   const facingContinuityRef = useRef({ targetById: new Map(), displayById: new Map() })
   const shellRefs = useRef(new Map())
   const prevBoardPoseByIdRef = useRef(new Map())
@@ -174,6 +176,22 @@ export function BattlefieldBoard({
       <div className="battlefield-board__surface" onPointerUp={() => onSurfacePointerUp?.()}>
         <svg className="battlefield-board__overlay" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
           <g transform={flipBoard ? `translate(${width} ${height}) scale(-1 -1)` : undefined}>
+          {terrainFeatures.map((feature) => {
+            const halfW = (feature.width ?? 1) / 2
+            const halfD = (feature.depth ?? 1) / 2
+            const x = feature.x - halfW
+            const y = feature.y - halfD
+            return (
+              <rect
+                key={feature.id}
+                className={`battlefield-board__terrain battlefield-board__terrain--${feature.type}`}
+                x={x}
+                y={y}
+                width={feature.width}
+                height={feature.depth}
+              />
+            )
+          })}
           {selectedZones && (
             <>
               <polygon className="battlefield-board__zone battlefield-board__zone--front" points={selectedZones.front.map((point) => `${point.x},${point.y}`).join(' ')} />
